@@ -164,8 +164,8 @@ def assemble(platform: str, sdk: Path, binaries: Path, stage: Path, notices: Pat
         (payload / "runtime.json").write_text(json.dumps(metadata, indent=2) + "\n")
         (payload / "LEGGIMI.txt").write_text(
             f"Lume TV {version} — build desktop sperimentale\n\n{launch}\n\n"
-            "Widevine non e' incluso; il runtime puo' prepararlo al primo utilizzo.\n"
-            "Le build Windows/Linux non sono ancora una certificazione di riproduzione DRM.\n"
+            "Al primo utilizzo di una diretta protetta, il player può scaricare Widevine nel profilo dell’app.\n"
+            "Le prove desktop di video, audio e DRM su Windows e Linux restano da completare.\n"
             "Licenze e avvisi sono nella cartella licenses.\n", encoding="utf-8")
     if any("widevine" in path.name.casefold() for path in payload.rglob("*")):
         raise ValueError("Refusing to package a Widevine component")
