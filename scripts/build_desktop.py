@@ -52,6 +52,13 @@ def source_revision(root: Path = ROOT) -> str:
     return result.stdout.strip() if result.returncode == 0 else "uncommitted"
 
 
+def cargo_target_directory(platform: str, root: Path = ROOT) -> Path:
+    # MSVC rejects CEF's longest generated object paths above MAX_PATH.
+    if platform.startswith("windows-"):
+        return root / "target" / "w"
+    return root / "target" / "desktop" / platform
+
+
 def native_host(pin: dict) -> None:
     systems = {"Darwin": "macos", "Windows": "windows", "Linux": "linux"}
     arches = {"arm64": "aarch64", "aarch64": "aarch64", "AMD64": "x86_64", "x86_64": "x86_64"}
@@ -266,7 +273,7 @@ def build(platform: str, *, toolchain="stable", output: Path | None = None,
         raise ValueError("Package output must be inside the project")
     output.mkdir(parents=True, exist_ok=True)
     sdk = cef_sdk.prepare(platform, archive=archive)
-    target = ROOT / "target/desktop" / platform
+    target = cargo_target_directory(platform)
     env = dict(os.environ, CEF_PATH=str(sdk), LUME_CEF_USE_PINNED_OBS="1",
                CARGO_TARGET_DIR=str(target), CMAKE_BUILD_PARALLEL_LEVEL="2", CARGO_BUILD_JOBS="2")
     if pin["os"] == "macos":

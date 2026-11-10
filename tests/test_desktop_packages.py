@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import sys
 import tarfile
 import tempfile
@@ -110,6 +110,15 @@ class DesktopPackageTests(unittest.TestCase):
             build.native_host(build.cef_sdk.pins()["macos-arm64"])
             with self.assertRaisesRegex(ValueError, "native runner"):
                 build.native_host(build.cef_sdk.pins()["windows-x64"])
+
+    def test_windows_cef_object_paths_fit_msvc_limit_in_github_workspace(self):
+        workspace = PureWindowsPath(r"D:\a\LumeTV-Desktop\LumeTV-Desktop")
+        generated = PureWindowsPath(
+            "x86_64-pc-windows-msvc/release/build/cef-dll-sys-8c9bc9e050925984/out/build/"
+            "libcef_dll_wrapper/CMakeFiles/libcef_dll_wrapper.dir/ctocpp/test/"
+            "api_version_test_ref_ptr_library_child_child_ctocpp.cc.obj")
+        object_path = build.cargo_target_directory("windows-x64", workspace) / generated
+        self.assertLess(len(str(object_path)), 260)
 
     def test_metadata_cannot_hide_a_different_binding_or_api_after_sdk_fallback(self):
         pin = build.cef_sdk.pins()["macos-arm64"]

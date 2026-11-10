@@ -46,6 +46,18 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+      - name: Cache the pinned SDK and native build dependencies
+        uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            .cache/cef-packaging/${{ matrix.platform }}
+            target/desktop/${{ matrix.platform }}
+            target/w
+          key: desktop-${{ matrix.platform }}-v1-${{ hashFiles('Cargo.lock', 'vendor/download-cef/lume-sdk-pins.json', 'scripts/build_desktop.py', 'scripts/prepare_cef_sdk.py', 'scripts/bundle_cef.py') }}-${{ github.sha }}
+          restore-keys: |
+            desktop-${{ matrix.platform }}-v1-${{ hashFiles('Cargo.lock', 'vendor/download-cef/lume-sdk-pins.json', 'scripts/build_desktop.py', 'scripts/prepare_cef_sdk.py', 'scripts/bundle_cef.py') }}-
       - name: Set up native build tools
         run: python -m pip install --disable-pip-version-check 'cmake>=3.31,<4' 'ninja>=1.12,<2'
       - name: Install Linux runtime dependencies
