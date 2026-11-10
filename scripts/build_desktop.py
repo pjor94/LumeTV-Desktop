@@ -180,7 +180,8 @@ def assemble(platform: str, sdk: Path, binaries: Path, stage: Path, notices: Pat
 
 
 def zip_portable(payload: Path, output: Path) -> None:
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6,
+                         strict_timestamps=False) as archive:
         for path in sorted(payload.rglob("*")):
             if path.is_file():
                 archive.write(path, (Path(payload.name) / path.relative_to(payload)).as_posix())

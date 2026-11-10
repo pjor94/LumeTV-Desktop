@@ -149,11 +149,12 @@ verificati checksum, header API e architettura. Il packaging macOS arm64 ha
 prodotto localmente DMG e ZIP. I layout Windows/Linux, i pin e i controlli
 di raccolta degli allegati hanno test con fixture.
 
-Le build complete Mac Intel, Windows e Linux attendono la prima esecuzione sui
-runner nativi GitHub. Il tentativo di compilazione incrociata da macOS si è
-fermato nelle dipendenze C: mancavano gli header Windows e il compilatore GNU
-Linux. Quei target restano quindi da compilare. Docker locale non era
-disponibile per la verifica Linux.
+Il 10 novembre le build native GitHub hanno prodotto i pacchetti Mac Apple
+Silicon, Mac Intel e Linux. Windows ha superato compilazione e controllo dei
+metadati; il confezionamento ZIP richiede una correzione alle date dei file SDK.
+Il precedente tentativo di compilazione incrociata da macOS si era fermato
+nelle dipendenze C, per assenza di header Windows e compilatore GNU Linux.
+Docker locale non era disponibile per la verifica Linux.
 
 L’esito delle build remote è visibile in
 [GitHub Actions](https://github.com/pjor94/LumeTV-Desktop/actions).

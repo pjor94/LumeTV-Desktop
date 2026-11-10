@@ -189,7 +189,7 @@ I resolver, il relay e la selezione runtime mantengono codice multipiattaforma; 
 
 I risultati Linux in container e macOS con Chrome installato in [RESULTS.md](RESULTS.md) riguardano il backend precedente. Per CEF incorporato servono prove dedicate su ciascuna piattaforma.
 
-Il tentativo Linux più recente ha completato **43 test core** (35 libreria, sei CLI e due HTTP; il test specifico macOS è escluso), prima che Docker fallisse con un errore di mount overlay. La ripetizione è stata bloccata dal filesystem Docker in sola lettura, prima dell’esecuzione del controllo API CEF. Primo tentativo (`reports/linux-cef-api-build-first-attempt.log`), ripetizione (`reports/linux-cef-api-build.log`). Il controllo API multipiattaforma è configurato in CI, ma gli esiti Windows/Linux CEF non sono stati acquisiti. [Stato Linux dettagliato](LINUX.md).
+Il tentativo Linux dell’8 novembre ha completato **43 test core** (35 libreria, sei CLI e due HTTP; il test specifico macOS è escluso), prima che Docker fallisse con un errore di mount overlay. La ripetizione è stata bloccata dal filesystem Docker in sola lettura, prima dell’esecuzione del controllo API CEF. Primo tentativo (`reports/linux-cef-api-build-first-attempt.log`), ripetizione (`reports/linux-cef-api-build.log`). In quelle esecuzioni mancavano ancora gli esiti API CEF Windows/Linux; le verifiche successive sono raccolte nel riepilogo del progetto. [Stato Linux dettagliato](LINUX.md).
 
 ## Test degli strumenti
 

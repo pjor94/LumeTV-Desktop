@@ -68,8 +68,8 @@ checksum. Il workflow di release pubblica una pre-release solo dopo il
 successo di tutte le build e il controllo di versione/commit degli allegati.
 Vedi [la guida di rilascio](RELEASE.md).
 
-Il packaging Mac arm64 è stato eseguito localmente. Gli altri job nativi
-devono ancora essere eseguiti su GitHub. Le firme restano di sviluppo.
+Gli esiti delle build native sono raccolti in [Stato del progetto](STATUS.md).
+Le firme restano di sviluppo.
 
 Per una release di produzione servono firma e notarizzazione appropriate,
 revisione degli avvisi e dei componenti esterni, prove native di installazione

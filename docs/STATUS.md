@@ -1,6 +1,6 @@
 # Stato del progetto e verifiche
 
-Ultimo aggiornamento dei sorgenti: **9 novembre 2026**. Le prove live riportate
+Ultimo aggiornamento dei sorgenti: **10 novembre 2026**. Le prove live riportate
 qui sono dell’**8 novembre 2026**; la disponibilità delle emittenti può essere
 cambiata da allora.
 
@@ -14,25 +14,27 @@ I report completi e i log restano locali in `reports/`, esclusi da Git.
 | Ambito | Osservato | Da completare |
 | --- | --- | --- |
 | macOS Apple Silicon | Build, bundle ad hoc, finestra Rust/CEF e catalogo completo; prove Rai/Mediaset/La7. | Conferma visiva diretta dei protetti nell’ultima build, prove prolungate, pacchetto di produzione. |
-| Windows | Core/API CEF, bootstrap sandbox e pipeline ZIP configurati. | Build e avvio nativi, Widevine e riproduzione desktop. |
-| Linux | Core Docker arm64 e Rai 1 headless nella diagnostica storica; pipeline DEB/tar.gz x64 configurate. | Build nativa dei nuovi pacchetti, player CEF desktop, GPU e CDM. |
+| macOS Intel | Build nativa, DMG/ZIP e controllo dei metadati dal pacchetto superati in CI. | Finestra, riproduzione, Widevine e collaudo prolungato. |
+| Windows | Build nativa e controllo dei metadati superati; confezionamento ZIP in verifica. | Pacchetto, finestra, Widevine e riproduzione desktop. |
+| Linux | DEB/tar.gz x64 e controllo dei metadati dal pacchetto superati in CI. Nelle prove storiche: core Docker arm64 e Rai 1 headless. | Finestra CEF desktop, GPU, CDM e riproduzione. |
 | Autoaggiornamento app | Non implementato. | Canale di rilascio, download verificato, installazione e recupero dopo errori. |
 
-I job configurati attendono la prima esecuzione su GitHub. Il controllo con
-`cef/dox` verifica le API Rust senza collegare o avviare CEF.
+I controlli del core Rust e delle API CEF sono passati sui tre sistemi.
+Il controllo con `cef/dox` verifica le API Rust senza collegare o avviare CEF.
 
-## Pacchetti desktop del 9 novembre
+## Pacchetti desktop del 10 novembre
 
-Sono configurate pipeline native per Mac arm64/Intel, Windows x64 e Linux x64,
-con sorgenti corrispondenti, dipendenze Cargo, avvisi e checksum. DMG e ZIP Mac
-arm64 sono stati generati localmente e hanno superato il controllo di
-caricamento del pacchetto. Gli altri job attendono l’esecuzione su GitHub.
-Il bootstrap sandbox Windows e i layout Linux sono coperti da test con fixture;
-le prove video su quelle piattaforme restano da eseguire.
+L’[esecuzione nativa del 10 novembre](https://github.com/pjor94/LumeTV-Desktop/actions/runs/42799428013)
+ha prodotto DMG e ZIP per Mac Apple Silicon e Intel, DEB e tar.gz per Linux x64
+e l’archivio dei sorgenti con le dipendenze Cargo. Windows ha superato compilazione
+e controllo dei metadati; il confezionamento ZIP richiede una correzione alle date dei file SDK.
+Ogni pacchetto contiene gli avvisi dei componenti, metadati e checksum.
+Il controllo automatico esegue il programma per leggere piattaforma, backend,
+sandbox e versione API; finestra e riproduzione richiedono prove separate.
 
 La [guida alle release](RELEASE.md) descrive formati, download e limiti.
-Sono pacchetti di sviluppo. Il collaudo desktop e la preparazione per la
-distribuzione di produzione restano da completare, come indicato nella tabella.
+I pacchetti sono di sviluppo. Restano il collaudo desktop indicato nella tabella
+e la preparazione della distribuzione di produzione.
 
 ## Catalogo e prime prove video
 

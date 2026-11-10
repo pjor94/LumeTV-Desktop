@@ -1,4 +1,5 @@
 from pathlib import Path, PureWindowsPath
+import os
 import sys
 import tarfile
 import tempfile
@@ -67,6 +68,16 @@ class DesktopPackageTests(unittest.TestCase):
         self.assertIn("LD_LIBRARY_PATH", executable.read_text())
         self.assertEqual((payload / "chrome-sandbox").stat().st_mode & 0o7777, 0o755)
         self.assertNotIn("--no-sandbox", executable.read_text())
+
+    def test_windows_zip_accepts_reproducible_sdk_timestamps_without_changing_contents(self):
+        source = self.sdk / "libcef.dll"
+        os.utime(source, (0, 0))
+        payload, _ = self.assemble("windows-x64")
+        artifacts = build.archive_package("windows-x64", payload, self.output, root=self.root)
+        member = payload.name + "/libcef.dll"
+        with zipfile.ZipFile(artifacts[0]) as archive:
+            self.assertEqual(archive.getinfo(member).date_time, (1980, 1, 1, 0, 0, 0))
+            self.assertEqual(archive.read(member), source.read_bytes())
 
     def test_linux_deb_records_standard_sandbox_permissions_and_runtime_dependencies(self):
         payload, _ = self.assemble("linux-x64")

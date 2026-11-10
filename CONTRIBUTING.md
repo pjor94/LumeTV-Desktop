@@ -1,7 +1,7 @@
 # Contribuire a Lume TV Desktop
 
 Lume TV Desktop è un prototipo Rust/CEF con un core condiviso fra macOS, Windows
-e Linux. Il packaging nativo è stato verificato su macOS Apple Silicon.
+e Linux. La CI compila i pacchetti sui runner nativi delle tre piattaforme.
 Prima di modificare runtime o integrazioni leggi [stato delle prove](docs/STATUS.md)
 e [attribuzioni](THIRD_PARTY_NOTICES.md).
 
@@ -50,6 +50,10 @@ CEF/binding e la patch `vendor/download-cef` sono vincolate a versioni e hash AP
 precisi: un aggiornamento richiede un controllo coordinato di SDK, binding,
 wrapper, packaging e riproduzione. Codec e DRM richiedono prove nel player.
 Vedi [la patch](vendor/download-cef/LUME_PATCH.md).
+
+Quando cambi i pin SDK, elimina la cache locale CEF e le cache GitHub Actions
+con prefisso desktop prima di ricompilare. Gli SDK recuperati dalla cache
+vengono sempre ricontrollati; una provenienza diversa dai pin ferma la build.
 
 I programmi e gli script non devono disattivare sandbox, TLS o controlli delle
 destinazioni di rete per risolvere un problema di un’emittente. I test automatici

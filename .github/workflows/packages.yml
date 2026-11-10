@@ -58,6 +58,7 @@ jobs:
           key: desktop-${{ matrix.platform }}-v1-${{ hashFiles('Cargo.lock', 'vendor/download-cef/lume-sdk-pins.json', 'scripts/build_desktop.py', 'scripts/prepare_cef_sdk.py', 'scripts/bundle_cef.py') }}-${{ github.sha }}
           restore-keys: |
             desktop-${{ matrix.platform }}-v1-${{ hashFiles('Cargo.lock', 'vendor/download-cef/lume-sdk-pins.json', 'scripts/build_desktop.py', 'scripts/prepare_cef_sdk.py', 'scripts/bundle_cef.py') }}-
+            desktop-${{ matrix.platform }}-v1-
       - name: Set up native build tools
         run: python -m pip install --disable-pip-version-check 'cmake>=3.31,<4' 'ninja>=1.12,<2'
       - name: Install Linux runtime dependencies

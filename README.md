@@ -20,8 +20,8 @@
 > [!NOTE]
 > ### Versione desktop in sviluppo
 >
-> La prima build verificata è per **macOS Apple Silicon**. Le pipeline per
-> Windows e Linux sono configurate; build e riproduzione native restano da verificare.
+> È una versione di prova. Le metriche di riproduzione disponibili riguardano
+> **macOS Apple Silicon**; il collaudo video su Mac Intel, Windows e Linux resta aperto.
 >
 > [Compila e avvia l’app](#compilazione) · [Verifiche e limiti attuali](docs/STATUS.md)
 
@@ -119,11 +119,14 @@ rimane disponibile in [Compilazione](#compilazione).
 | Piattaforma | Stato |
 | --- | --- |
 | macOS Apple Silicon | Build e finestra Rust/CEF eseguite; metriche di riproduzione verificate su Rai 1, Canale 5 e La7. |
-| Windows x64 | Bootstrap sandbox e pipeline ZIP con CEF configurati; esecuzione nativa e riproduzione da verificare. |
-| Linux x64 | Pipeline DEB/tar.gz con CEF configurata; esecuzione nativa e riproduzione desktop da verificare. |
+| macOS Intel | DMG e ZIP compilati su runner nativo; controllo dei metadati dal pacchetto superato. Riproduzione da verificare. |
+| Windows x64 | Build nativa e controllo dei metadati superati; confezionamento ZIP in verifica. Riproduzione da verificare. |
+| Linux x64 | DEB e tar.gz compilati su runner nativo; controllo dei metadati dal pacchetto superato. Riproduzione desktop da verificare. |
 
-È configurata anche la build Mac Intel; la prima esecuzione sul relativo runner
-resta da completare. Il DMG e lo ZIP Mac Apple Silicon sono stati generati localmente.
+Le build includono CEF e gli avvisi dei componenti. Il controllo automatico
+avvia l’eseguibile per leggerne i metadati; il collaudo della finestra e delle
+dirette richiede una sessione grafica. Gli esiti sono in
+[GitHub Actions](https://github.com/pjor94/LumeTV-Desktop/actions).
 
 Nelle ultime prove macOS, i canali protetti hanno superato i controlli DRM e di
 decodifica. Le catture mostrano però l’area video nera: resta da confermare
