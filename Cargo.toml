@@ -1,0 +1,63 @@
+[package]
+name = "lume-player"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.92"
+license = "GPL-3.0-or-later"
+description = "Lume TV desktop player with an embedded CEF runtime"
+repository = "https://github.com/pjor94/LumeTV-Desktop"
+default-run = "lume-player"
+publish = false
+
+[workspace]
+members = ["crates/lume-cef-windows"]
+default-members = ["."]
+exclude = ["vendor/download-cef"]
+resolver = "2"
+
+[workspace.dependencies]
+cef = { version = "=150.2.1", default-features = false, features = ["sandbox", "build-util"] }
+
+[features]
+default = []
+embedded-cef = ["dep:cef", "dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit"]
+
+[[bin]]
+name = "lume-cef"
+path = "src/bin/lume_cef.rs"
+required-features = ["embedded-cef"]
+
+[[bin]]
+name = "lume-cef-helper"
+path = "src/bin/lume_cef_helper.rs"
+required-features = ["embedded-cef"]
+
+[dependencies]
+anyhow = "1"
+base64 = "0.22"
+clap = { version = "4.5", features = ["derive"] }
+ctrlc = "3.4"
+quick-xml = "0.37"
+lzma-rust2 = { version = "=0.24.0", default-features = false, features = ["std", "xz"] }
+regex = "1"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tiny_http = "0.12"
+tokio = { version = "1", default-features = false, features = ["rt"] }
+uuid = { version = "1", features = ["v4"] }
+cef = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6.3", optional = true }
+objc2-foundation = { version = "0.3.2", optional = true }
+objc2-app-kit = { version = "0.3.2", optional = true, default-features = false, features = ["std", "NSApplication", "NSEvent", "NSResponder", "NSUserInterfaceValidation", "NSView", "NSWindow", "NSMenu", "NSMenuItem", "NSRunningApplication"] }
+
+[profile.release]
+lto = "thin"
+strip = true
+
+[patch.crates-io]
+# Exact, opt-in OBS SDK patch with verified stable and experimental CEF API hashes.
+download-cef = { path = "vendor/download-cef" }

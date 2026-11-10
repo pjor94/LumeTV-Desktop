@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "evidence_date": "2026-11-08",
+  "selection_date": "2026-11-09",
+  "scope": "Selected metrics from local macOS arm64 runs; raw reports and private profiles are not published. This is not a new playback run.",
+  "sources": {
+    "motion-validation.json": {
+      "source_sha256": "3407a10a6e5d111b67000accaba4860fb72515aebc54d90833688b505ca51a8a",
+      "selected_metrics": {
+        "checked_unix_ms": 1794141560919,
+        "os": "macos",
+        "arch": "aarch64",
+        "native_runs": [
+          {
+            "channel": "Rai 1",
+            "report": "motion-native-rai1.json",
+            "progress_seconds": 223.882,
+            "drm_verified": false,
+            "audio_decoded_bytes": 9050091,
+            "audio_audibility": "not_verified",
+            "maximum_reported_dropped_frames": 7,
+            "reported_errors": 0
+          },
+          {
+            "channel": "Canale 5",
+            "report": "motion-native-canale5.json",
+            "progress_seconds": 77.986,
+            "drm_verified": true,
+            "audio_decoded_bytes": 967238,
+            "audio_audibility": "not_verified",
+            "maximum_reported_dropped_frames": 1,
+            "reported_errors": 0
+          },
+          {
+            "channel": "La7",
+            "report": "motion-native-la7.json",
+            "progress_seconds": 149.933,
+            "drm_verified": true,
+            "audio_decoded_bytes": 1830677,
+            "audio_audibility": "not_verified",
+            "maximum_reported_dropped_frames": 0,
+            "reported_errors": 0
+          },
+          {
+            "channel": "Canale 5 · build finale",
+            "report": "motion-native-canale5-final.json",
+            "progress_seconds": 463.81,
+            "drm_verified": true,
+            "audio_decoded_bytes": 5598210,
+            "audio_audibility": "not_verified",
+            "maximum_reported_dropped_frames": 4,
+            "reported_errors": 0
+          }
+        ],
+        "code_tests": {
+          "rust_cef": 66,
+          "node": 25,
+          "browser_dom": 9,
+          "python": 18,
+          "clippy": "passed_-D_warnings",
+          "format": "passed"
+        },
+        "compact_layout": {
+          "contentScrollWidth": 733,
+          "contentWidth": 733,
+          "documentWidth": 820,
+          "filters": [
+            {
+              "scrollWidth": 687,
+              "width": 687
+            },
+            {
+              "scrollWidth": 407,
+              "width": 407
+            }
+          ],
+          "programmeFont": "11px",
+          "programmeLines": "2",
+          "recent": [
+            {
+              "scrollWidth": 706,
+              "width": 584
+            }
+          ],
+          "scrollTop": 0,
+          "width": 820
+        },
+        "themes_checked": [
+          "dark",
+          "light"
+        ],
+        "native_fullscreen_roundtrip": true,
+        "ui_fps_measurement": "not_collected",
+        "windows_execution": "not_verified",
+        "linux_execution": "not_verified",
+        "bundled_widevine_files": 0,
+        "source_sha256": {
+          "web/app/app.js": "fc39f885e335a324d1b96ffdb789b63adceebdc3502b4b778bf75f04d0d0e7dd",
+          "web/app/app.css": "49a2dc5c4e2c5b44c256384c5bb7476e97b5e25ec5a206a21197861485a92e9d",
+          "web/app/ui.js": "8794ee44b75fe457f456aff332fb0b97a1e485f308d6f9ea6f759f5a705b88e0",
+          "web/app/motion.css": "69207e0c9a5a34d13a38d2d7a3dd294be122b48781fc1ce410184c72c573a57a",
+          "web/app/index.html": "93a5d63311aea452502c848c930b84d79914085986321d76436d26a7f04206d7",
+          "src/desktop.rs": "1d028e466710571d4a7b8223b8bbf4f43d8d402c1f04ee5940cf318e4e67eb47"
+        },
+        "limitations": [
+          "Automatic media checks were muted; audio decoding was measured, audibility was not newly confirmed.",
+          "The first native pass preceded the final typography and focus refinements; the final Canale 5 report verifies the completed build.",
+          "Video dropped-frame counters are recorded, not claimed to be zero. No GPU profile establishing 60 fps was collected.",
+          "Responsive and light-theme checks used the HTTP preview with the same compiled assets; native playback checks used the macOS CEF window.",
+          "Protected-video screenshots are black. This is consistent with Chromium capture protection, but direct on-monitor visual confirmation remains pending; DRM/decoding metrics alone are not pixel verification."
+        ],
+        "protected_visual_capture": "black_in_CUA_screenshots",
+        "protected_visual_confirmation": "requested_from_user_not_yet_confirmed"
+      }
+    },
+    "desktop-first-run-bundled-summary.json": {
+      "source_sha256": "b989994d8eebe50763cd8820c38e85aa9ca8b2f510151a7b86fb27803df82fcd",
+      "selected_metrics": {
+        "widevine_present": true,
+        "widevine_version": "4.10.3112.0",
+        "source": "CEF Component Updater",
+        "cdm_copied": false,
+        "browser_restarted_before_playback": false,
+        "external_browser_launched": false,
+        "assessment": {
+          "audio_audibility": "not_verified",
+          "audio_decoded_bytes": 1755613,
+          "decoded_video_frames_delta": 7199,
+          "drm_required": true,
+          "drm_verified": true,
+          "elapsed_server_seconds": 144.026,
+          "encrypted_event_observed": true,
+          "license_http_success": true,
+          "progress_seconds": 143.874,
+          "required_seconds": 30,
+          "status": "verified",
+          "usable_key_observed": true,
+          "video_dimensions_observed": true,
+          "video_frames_observed": 7288
+        }
+      }
+    },
+    "catalog-validation.json": {
+      "source_sha256": "9e8d74e7cc9f55f5122a95271923979226d0490938c6171f6b94f72a4a0b6a1a",
+      "selected_metrics": {
+        "checked_unix_ms": 1794136804515,
+        "os": "macos",
+        "arch": "aarch64",
+        "catalog_channels": 126,
+        "resolver_successes": 119,
+        "valid_manifests": 112,
+        "manifest_check_requested_licenses": false,
+        "native_video_verified_channels": [
+          {
+            "channel": {
+              "id": "fbed29890dd3eff39ae36b99",
+              "name": "Tv8",
+              "provider": "sky"
+            },
+            "verdict": "playback_verified",
+            "progress_seconds": 32.965,
+            "drm_verified": false,
+            "audio_decoded_bytes": 539053,
+            "audio_audibility": "not_verified"
+          },
+          {
+            "channel": {
+              "id": "42efc5d86cc57d190c627e7d",
+              "name": "Nove",
+              "provider": "discovery"
+            },
+            "verdict": "playback_verified",
+            "progress_seconds": 32.968,
+            "drm_verified": false,
+            "audio_decoded_bytes": 537234,
+            "audio_audibility": "not_verified"
+          },
+          {
+            "channel": {
+              "id": "cc1d802de6dbc9a5b7150014",
+              "name": "Rai 3 TGR Lombardia",
+              "provider": "rainewsrg"
+            },
+            "verdict": "playback_verified",
+            "progress_seconds": 32.961,
+            "drm_verified": false,
+            "audio_decoded_bytes": 558702,
+            "audio_audibility": "not_verified"
+          },
+          {
+            "channel": {
+              "id": "61f899cce8536c8a489ecc6e",
+              "name": "RTL 102.5",
+              "provider": "direct"
+            },
+            "verdict": "playback_verified",
+            "progress_seconds": 31.966,
+            "drm_verified": false,
+            "audio_decoded_bytes": 964074,
+            "audio_audibility": "not_verified"
+          },
+          {
+            "channel": {
+              "id": "rai1",
+              "name": "Rai 1",
+              "provider": "rai"
+            },
+            "verdict": "playback_verified",
+            "progress_seconds": 32.955,
+            "drm_verified": false,
+            "audio_decoded_bytes": 1353259,
+            "audio_audibility": "not_verified"
+          },
+          {
+            "channel": {
+              "id": "canale5",
+              "name": "Canale 5",
+              "provider": "mediaset"
+            },
+            "verdict": "playback_verified",
+            "progress_seconds": 32.981,
+            "drm_verified": true,
+            "audio_decoded_bytes": 404433,
+            "audio_audibility": "not_verified"
+          },
+          {
+            "channel": {
+              "id": "la7",
+              "name": "La7",
+              "provider": "la7"
+            },
+            "verdict": "playback_verified",
+            "progress_seconds": 32.986,
+            "drm_verified": true,
+            "audio_decoded_bytes": 408912,
+            "audio_audibility": "not_verified"
+          }
+        ],
+        "widevine_bundled": false,
+        "windows_execution": "not_verified",
+        "linux_execution": "not_verified",
+        "limitations": [
+          "14 channels did not yield a valid manifest in the catalogue audit.",
+          "Only seven representative channels have native video verification.",
+          "TGR Lombardia initially received HTTP 404 segments and passed on retry.",
+          "A cold profile needed more than the original 120 seconds for automatic CDM download; the current limit is 300 seconds.",
+          "Audio decoding was measured; audibility was not manually confirmed.",
+          "The UI guide fixture is the real XMLTV download from 08:56, not a fresh network download."
+        ]
+      }
+    }
+  }
+}

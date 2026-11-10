@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "bindings_cef_version": "150.0.14",
+  "provenance": "https://github.com/obsproject/obs-studio/blob/33.0.0/CMakePresets.json",
+  "targets": {
+    "macos-arm64": {
+      "os": "macos", "arch": "aarch64", "target": "aarch64-apple-darwin",
+      "cef_platform": "macosarm64", "api_platform": "MAC",
+      "archive": "cef_binary_7871_macos_arm64.tar.xz",
+      "sha256": "0343233fc462384c2f1f58a4222028bc6171f05948a822241f89df2faa7cee8d",
+      "cef_version": "150.0.19+gcf60f42+chromium-150.0.7871.252",
+      "stable_hash": "e85c868aa8a947e1e7c9904c0745c60ae490fa05",
+      "experimental_hash": "0934859000c911cdd75907f63f2ef8e485706e5b"
+    },
+    "macos-x64": {
+      "os": "macos", "arch": "x86_64", "target": "x86_64-apple-darwin",
+      "cef_platform": "macosx64", "api_platform": "MAC",
+      "archive": "cef_binary_7871_macos_x86_64.tar.xz",
+      "sha256": "980783bba509e7e79a671c29040bbe29d832a934c1368b500a17a22e076eb0f4",
+      "cef_version": "150.0.19+gcf60f42+chromium-150.0.7871.252",
+      "stable_hash": "e85c868aa8a947e1e7c9904c0745c60ae490fa05",
+      "experimental_hash": "0934859000c911cdd75907f63f2ef8e485706e5b"
+    },
+    "windows-x64": {
+      "os": "windows", "arch": "x86_64", "target": "x86_64-pc-windows-msvc",
+      "cef_platform": "windows64", "api_platform": "WIN",
+      "archive": "cef_binary_7871_windows_x64.zip",
+      "sha256": "54cd191a3f56bb1f05be22b95e1fa8041061b38bd5fe94e0776fb34dd599f341",
+      "cef_version": "150.0.20-7871-devtools_patch.3553+gc4b3522+chromium-150.0.7871.252",
+      "stable_hash": "71146b4350a01d3805e7ea990eb034e6ef4d53db",
+      "experimental_hash": "c63591fb321ac707f8710f296a8ae1ec05a575db"
+    },
+    "linux-x64": {
+      "os": "linux", "arch": "x86_64", "target": "x86_64-unknown-linux-gnu",
+      "cef_platform": "linux64", "api_platform": "LINUX",
+      "archive": "cef_binary_7871_linux_x86_64.tar.xz",
+      "sha256": "8ffc64d06ea74da613eeda7f2aa5d4e98661af6fa3ed8c68724c9a6e4e89ea8e",
+      "cef_version": "150.0.19+gcf60f42+chromium-150.0.7871.252",
+      "stable_hash": "210767725a6feb2e4becd3956b648cab6a006712",
+      "experimental_hash": "a5d187477e0cbe23eb1043c2f1868582b7018260"
+    }
+  }
+}

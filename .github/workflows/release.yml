@@ -1,0 +1,78 @@
+name: Desktop release
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag matching Cargo.toml, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    name: Validate tagged source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      revision: ${{ steps.metadata.outputs.revision }}
+      tag: ${{ steps.metadata.outputs.tag }}
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Validate tag, Cargo versions and checked-out commit
+        id: metadata
+        run: python scripts/release_desktop.py metadata
+
+  build:
+    name: Verify and build all packages
+    needs: metadata
+    uses: ./.github/workflows/ci.yml
+    with:
+      source_ref: ${{ needs.metadata.outputs.revision }}
+
+  publish:
+    name: Publish the experimental desktop pre-release
+    needs: [metadata, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-*
+          path: dist/
+          merge-multiple: true
+      - name: Verify every platform, matching sources and downloaded checksums
+        run: python scripts/release_desktop.py collect
+      - name: Publish all verified assets together
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/release_desktop.py publish

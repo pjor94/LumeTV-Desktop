@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="it" data-lume-harness>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lume TV · verifica riproduzione</title>
+  <style>
+    :root { color-scheme: dark; font: 16px system-ui, sans-serif; background: #0a0b0e; color: #f5f6f8; }
+    body { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    p { color: #a2a7b3; line-height: 1.5; }
+    video { display: block; width: 100%; max-height: 62vh; background: black; border-radius: 8px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    button { background: #2b2e35; color: inherit; font: inherit; border: 1px solid #6b7483; border-radius: 6px; padding: 10px 14px; cursor: pointer; }
+    button:disabled { opacity: .4; cursor: default; }
+    button:focus-visible { outline: 3px solid #99caff; outline-offset: 3px; }
+    [hidden] { display: none !important; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; background: #181a1f; padding: 16px; border-radius: 6px; }
+    #status { color: #99caff; }
+    .note { font-size: 14px; }
+  </style>
+  <script defer src="/vendor/shaka-player.compiled.js"></script>
+  <script defer src="/player.js"></script>
+</head>
+<body>
+  <h1>Lume TV · verifica riproduzione</h1>
+  <p id="channel">Caricamento sessione locale…</p>
+  <p id="status" role="status" aria-live="polite">Inizializzazione della diagnostica</p>
+  <video id="video" autoplay muted playsinline controls aria-label="Diretta di prova"></video>
+  <div class="actions">
+    <button id="start" hidden>Avvia riproduzione</button>
+    <button id="unmute" disabled>Attiva audio</button>
+    <button id="verify-audio" disabled>Audio verificato</button>
+  </div>
+  <p class="note">La prova parte senza audio. I frame e l’avanzamento del video vengono misurati automaticamente. Dopo aver attivato l’audio, premi “Audio verificato” soltanto se lo senti: i dati di decodifica da soli non dimostrano che sia udibile.</p>
+  <pre id="metrics" aria-label="Misurazioni">In attesa dei primi dati</pre>
+</body>
+</html>

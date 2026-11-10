@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="it"><meta charset="utf-8"><title>Verifiche DOM Lume</title>
+<style>body{font:15px system-ui;padding:28px;max-width:900px;margin:auto}button{padding:10px}output{display:block;white-space:pre-wrap;line-height:1.8}#sandbox{max-height:160px;overflow:auto;border:1px solid #aaa;margin-top:16px}dialog{padding:24px}</style>
+<h1>Verifiche DOM Lume</h1><button id="run">Esegui verifiche</button><output id="results" aria-live="polite">Pronto.</output><section id="sandbox"></section>
+<script src="ui.js"></script><script>
+'use strict';
+LumeUI.initialize(document);
+const checks = [];
+const assert = (condition, message) => { if (!condition) throw Error(message); };
+const check = (name, run) => checks.push({ name, run });
+const host = () => { const node = document.createElement('div'); document.getElementById('sandbox').replaceChildren(node); return node; };
+check('Aggiornamento dati: scheda, pulsante, immagine e focus restano gli stessi', () => {
+  const node=host();
+  LumeUI.patch(node,'<article data-key="a"><button data-focus="a">Prima</button><img src="assets/symbol.svg"></article>');
+  const article=node.firstChild,button=node.querySelector('button'),image=node.querySelector('img');button.focus();
+  LumeUI.patch(node,'<article data-key="a"><button data-focus="a" aria-pressed="true">Dopo</button><img src="assets/symbol.svg"></article>');
+  assert(node.firstChild===article && node.querySelector('button')===button && node.querySelector('img')===image,'Nodi ricreati');
+  assert(document.activeElement===button && button.textContent==='Dopo' && button.getAttribute('aria-pressed')==='true','Focus o dati errati');
+});
+check('Riordino e rimozione: identità e listener dei canali conservati', () => {
+  const node=host();LumeUI.patch(node,'<button data-play="a">A</button><button data-play="b">B</button><button data-play="c">C</button>');
+  const a=node.children[0],b=node.children[1];let clicks=0;b.addEventListener('click',()=>clicks++);
+  LumeUI.patch(node,'<button data-play="b">B2</button><button data-play="a">A</button>');b.click();
+  assert(node.children.length===2 && node.children[0]===b && node.children[1]===a && clicks===1,'Identità persa nel riordino');
+});
+check('Inserire una sezione non ricrea la griglia esistente', () => {
+  const node=host();LumeUI.patch(node,'<div data-key="grid"><button data-play="a">A</button></div>');const grid=node.firstChild;
+  LumeUI.patch(node,'<section data-key="hero">In evidenza</section><div data-key="grid"><button data-play="a">A</button></div>');
+  assert(node.children[1]===grid,'Griglia ricreata');
+});
+check('Una select aperta conserva focus e scelta durante altri aggiornamenti', () => {
+  const node=host();const selectHTML='<select id="fixture-select"><option value="a" selected>A</option><option value="b">B</option></select>';
+  LumeUI.patch(node,selectHTML+'<p>Prima</p>');const select=node.firstChild;select.value='b';select.focus();
+  LumeUI.patch(node,selectHTML+'<p>Dopo</p>');
+  assert(node.firstChild===select && document.activeElement===select && select.value==='b','Selezione persa');select.blur();
+  LumeUI.patch(node,selectHTML.replace('value="a" selected','value="a"').replace('value="b"','value="b" selected')+'<p>Salvato</p>');
+  assert(select.value==='b','Valore salvato errato');
+});
+check('La cache visiva di un logo sopravvive, un nuovo URL permette il recupero', () => {
+  const node=host();LumeUI.patch(node,'<img src="assets/symbol.svg"><p>A</p>');const image=node.firstChild;
+  image.hidden=true;image.setAttribute('data-loaded','');
+  LumeUI.patch(node,'<img src="assets/symbol.svg"><p>B</p>');assert(image.hidden && image.hasAttribute('data-loaded'),'Stato logo cancellato');
+  LumeUI.patch(node,'<img src="assets/logo-light.svg"><p>C</p>');assert(!image.hidden && !image.hasAttribute('data-loaded'),'Nuova sorgente non recuperata');
+});
+check('Aggiornamento identico: nessuna mutazione del DOM', async () => {
+  const node=host();const html='<button data-play="a">A</button>';LumeUI.patch(node,html);let changes=0;
+  const observer=new MutationObserver(records=>changes+=records.length);observer.observe(node,{subtree:true,childList:true,attributes:true,characterData:true});
+  LumeUI.patch(node,html);await Promise.resolve();observer.disconnect();assert(changes===0,'Mutazioni inutili');
+});
+check('Aggiornamento SVG mantiene namespace e riferimenti alle icone', () => {
+  const node=host();LumeUI.patch(node,'<svg xmlns="http://www.w3.org/2000/svg"><use href="#a"></use></svg>');const svg=node.firstChild;
+  LumeUI.patch(node,'<svg xmlns="http://www.w3.org/2000/svg"><use href="#b"></use></svg>');
+  assert(node.firstChild===svg && svg.firstChild.namespaceURI==='http://www.w3.org/2000/svg' && svg.firstChild.getAttribute('href')==='#b','SVG non valido');
+});
+check('Chiudi/riapri rapido: un completamento vecchio non chiude il dialogo', async () => {
+  const node=host();node.innerHTML='<dialog><button>Chiudi</button></dialog>';const dialog=node.firstChild;
+  LumeUI.openDialog(dialog);LumeUI.closeDialog(dialog);LumeUI.openDialog(dialog);
+  await new Promise(resolve=>setTimeout(resolve,300));
+  assert(dialog.open && !dialog.inert && !dialog.style.willChange,'Stato finale del dialogo errato');LumeUI.closeDialog(dialog,true);
+});
+check('Mini-player: inversione durante il movimento e pulizia delle trasformazioni', async () => {
+  const node=host();node.innerHTML='<div id="fixture-dock" style="position:fixed;left:20px;top:100px;width:640px;height:360px;transform-origin:0 0"><video style="position:absolute;width:100%;height:100%;transform-origin:0 0"></video></div>';
+  const dock=node.firstChild,video=dock.firstChild;
+  const before=LumeUI.captureDock(dock);dock.style.cssText='position:fixed;left:100px;top:200px;width:310px;height:208.375px;transform-origin:0 0';video.style.height='174.375px';
+  LumeUI.moveDock(dock,before);await new Promise(resolve=>setTimeout(resolve,40));
+  const interrupted=LumeUI.captureDock(dock);dock.style.cssText='position:fixed;left:20px;top:100px;width:640px;height:360px;transform-origin:0 0';video.style.height='100%';LumeUI.moveDock(dock,interrupted);
+  await new Promise(resolve=>setTimeout(resolve,320));
+  assert(dock.firstChild===video && !dock.hasAttribute('data-dock-moving') && !dock.style.willChange && !video.style.willChange,'Movimento non concluso');
+  assert(dock.getAnimations().length===0 && video.getAnimations().length===0,'Trasformazioni rimaste attive');
+  assert(Math.abs(video.getBoundingClientRect().width/video.getBoundingClientRect().height-16/9)<0.001,'Proporzioni errate');
+});
+document.getElementById('run').onclick=async()=>{
+  const output=document.getElementById('results');output.textContent='';let passed=0;
+  for(const {name,run} of checks){try{await run();output.textContent+='PASS · '+name+'\n';passed++;}catch(error){output.textContent+='FAIL · '+name+' · '+error.message+'\n';}}
+  output.textContent+=`${passed}/${checks.length} superati`;document.getElementById('sandbox').replaceChildren();
+};
+</script></html>

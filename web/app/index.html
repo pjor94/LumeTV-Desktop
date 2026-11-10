@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Lume TV</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/motion.css">
+  <script defer src="/vendor/shaka-player.compiled.js"></script>
+  <script defer src="/player.js"></script>
+  <script defer src="/ui.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body data-page="channels">
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+      <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5L16 8Z"/></symbol>
+      <symbol id="i-guide" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-13 4h3m3 0h3m-9 3h3"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.7" cy="10.7" r="6.7"/><path d="m16 16 4.5 4.5"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="m9 3-.7 2.4-2.3 1-.8-.3-1.9 3.3 1.8 1.8v2l-1.8 1.7 1.9 3.3 2.4-.6 1.7 1L10 21h4l.7-2.4 1.7-1 2.4.6 1.9-3.3-1.8-1.8v-2l1.8-1.7-1.9-3.3-2.4.6-1.7-1L14 3H9Z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7V5Z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14m8-14v14"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 10a8 8 0 1 0-1 7M20 4v6h-6"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+      <symbol id="i-muted" viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4V4Zm5 5 6 6m0-6-6 6"/></symbol>
+      <symbol id="i-fullscreen" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></symbol>
+      <symbol id="i-minimize" viewBox="0 0 24 24"><path d="M3 9h6V3m6 0v6h6M9 21v-6H3m12 6v-6h6"/></symbol>
+      <symbol id="i-pip" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="11" y="11" width="8" height="6" rx="1"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+      <symbol id="i-tv" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="15" rx="3"/><path d="m8 2 4 4 4-4"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14a9 9 0 0 1-10-10A9 9 0 1 0 20 14Z"/></symbol>
+      <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M5 9h1m3 0h1m3 0h1m3 0h1M5 12h1m3 0h1m3 0h1m3 0h1M7 16h10"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.5"/></symbol>
+      <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0m-11 4a6 6 0 0 1 8 0m-4 4h.01"/></symbol>
+    </defs>
+  </svg>
+  <a class="skip-link" href="#page-content">Vai ai contenuti</a>
+  <aside class="sidebar" aria-label="Navigazione principale">
+    <a class="brand" href="#channels" aria-label="Lume TV, canali"><img class="brand-light" src="/assets/logo-light.svg" alt="Lume TV"><img class="brand-dark" src="/assets/logo-dark.svg" alt="Lume TV"><img class="brand-symbol" src="/assets/symbol.svg" alt=""></a>
+    <span class="sidebar-label">LA TUA TELEVISIONE</span>
+    <nav class="main-navigation">
+      <button class="nav-item active" data-route="channels" aria-label="Canali" title="Canali" aria-current="page"><svg><use href="#i-grid"/></svg><span>Canali</span></button>
+      <button class="nav-item" data-route="discover" aria-label="Cosa guardare" title="Cosa guardare"><svg><use href="#i-compass"/></svg><span>Cosa guardare</span></button>
+      <button class="nav-item" data-route="guide" aria-label="Guida TV" title="Guida TV"><svg><use href="#i-guide"/></svg><span>Guida TV</span></button>
+      <button class="nav-item" data-route="favorites" aria-label="Preferiti" title="Preferiti"><svg><use href="#i-star"/></svg><span>Preferiti</span><span class="nav-count" id="favorite-count" hidden>0</span></button>
+    </nav>
+    <div class="sidebar-now" id="sidebar-now" hidden></div>
+    <div class="sidebar-bottom">
+      <button class="nav-item" id="reminders-button" aria-label="Promemoria" title="Promemoria"><svg><use href="#i-bell"/></svg><span>Promemoria</span><span class="nav-count" id="reminder-count" hidden>0</span></button>
+      <button class="nav-item" data-route="settings" aria-label="Impostazioni" title="Impostazioni"><svg><use href="#i-settings"/></svg><span>Impostazioni</span></button>
+      <div class="sidebar-signature"><span class="lume-dot"></span>La TV, fatta semplice.</div>
+    </div>
+  </aside>
+  <main class="workspace">
+    <header class="toolbar">
+      <div class="toolbar-location"><span class="live-dot"></span><span>Un mondo da guardare</span></div>
+      <label class="search-box"><svg aria-hidden="true"><use href="#i-search"/></svg><span class="sr-only">Cerca canale o programma</span><input id="search" type="search" autocomplete="off" placeholder="Cerca canale o programma…" maxlength="120"><kbd id="search-shortcut">⌘ K</kbd></label>
+      <time id="clock" class="clock"></time>
+    </header>
+    <div class="content-scroll" id="content-scroll">
+      <div id="page-content" tabindex="-1"><div class="initial-loading"><img src="/assets/symbol.svg" alt=""><p>Metti comodo il tuo mondo.</p><span>Caricamento dei canali…</span></div></div>
+      <section id="watch-view" aria-label="Diretta" hidden>
+        <div id="player-dock" class="player-dock" tabindex="0" aria-label="Player video">
+          <video id="video" playsinline aria-label="Diretta TV"></video>
+          <div class="player-backdrop"><img src="/assets/symbol.svg" alt=""></div>
+          <div id="player-overlay" class="player-overlay" role="status">
+            <span class="player-spinner"></span><h2 id="player-status">Preparazione della diretta</h2><p id="player-status-detail">Ancora un istante, il tuo canale sta arrivando.</p>
+            <button class="button primary" id="player-retry" hidden>Riprova</button>
+            <button class="button primary" id="player-start" hidden><svg><use href="#i-play"/></svg>Avvia la diretta</button>
+          </div>
+          <div class="player-top"><span class="live-badge"><span></span> IN DIRETTA</span><span id="player-channel-label"></span><button class="icon-button player-close" id="player-close" aria-label="Chiudi la diretta" title="Chiudi la diretta"><svg><use href="#i-close"/></svg></button></div>
+          <div class="player-controls" id="player-controls">
+            <div class="live-track"><span></span><button id="go-live" title="Torna alla diretta">DIRETTA <i></i></button></div>
+            <div class="control-row">
+              <button class="icon-button" id="play-pause" aria-label="Pausa" title="Pausa · Spazio"><svg><use href="#i-pause"/></svg></button>
+              <button class="icon-button" id="mute" aria-label="Disattiva audio" title="Audio · M"><svg><use href="#i-volume"/></svg></button>
+              <input id="volume" class="volume" type="range" min="0" max="1" step="0.01" value="0.7" aria-label="Volume">
+              <span class="control-channel" id="control-channel"></span><span id="video-quality" class="video-quality"></span>
+              <button class="icon-button" id="player-settings" aria-label="Opzioni di riproduzione" title="Opzioni di riproduzione" aria-expanded="false"><svg><use href="#i-settings"/></svg></button>
+              <button class="icon-button" id="picture-in-picture" aria-label="Picture in picture" title="Picture in picture" hidden><svg><use href="#i-pip"/></svg></button>
+              <button class="icon-button" id="fullscreen" aria-label="Schermo intero" title="Schermo intero · F"><svg><use href="#i-fullscreen"/></svg></button>
+            </div>
+          </div>
+          <div class="player-options" id="player-options" hidden><h3>Riproduzione</h3><label>Qualità massima<select id="playback-quality"><option value="auto">Automatica</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option></select></label><label>Audio<select id="audio-track"><option>Italiano</option></select></label><label>Sottotitoli<select id="text-track"><option value="off">Disattivati</option></select></label></div>
+          <div class="mini-controls"><button id="mini-expand" aria-label="Espandi il player"><svg><use href="#i-minimize"/></svg><span id="mini-channel-name"></span></button><button class="icon-button" id="mini-close" aria-label="Chiudi il mini player"><svg><use href="#i-close"/></svg></button></div>
+        </div>
+        <div class="watch-details" id="watch-details"></div>
+        <aside class="watch-browser" id="watch-browser" aria-label="Cambia canale"></aside>
+      </section>
+      <footer class="content-footer"><span id="catalog-status">I tuoi canali, in un solo posto.</span><button class="text-button" id="shortcuts-button"><svg><use href="#i-keyboard"/></svg>Scorciatoie da tastiera</button></footer>
+    </div>
+  </main>
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
+  <dialog id="details-dialog" aria-labelledby="dialog-title"><div class="dialog-content" id="dialog-content"></div></dialog>
+</body>
+</html>

@@ -1,0 +1,52 @@
+name: Segnalazione di un problema
+description: Riproduzione, interfaccia, avvio o compilazione di Lume TV.
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Per una vulnerabilità consulta SECURITY.md. Non allegare profili browser,
+        cookie, token, header di autorizzazione, URL firmati o messaggi di licenza DRM.
+  - type: input
+    id: version
+    attributes:
+      label: Versione o commit
+      placeholder: Versione nelle impostazioni, oppure commit compilato
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Sistema operativo e architettura
+      placeholder: macOS / Windows / Linux, versione, arm64 / x86_64, eventuale VM
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Modalità
+      options:
+        - App con player CEF incorporato
+        - Diagnostica con browser esterno
+        - Compilazione o test
+        - Non so
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passaggi e comportamento osservato
+      description: >-
+        Spiega come riprodurre il problema e cosa ti aspettavi.
+        Per un canale indica nome, data/ora e se il player ufficiale funziona
+        sullo stesso dispositivo e sulla stessa rete.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostica ripulita, se disponibile
+      description: >-
+        Incolla solo le informazioni necessarie, dopo aver rimosso dati privati.
+        Un contatore di frame o una cattura nera non confermano da soli
+        che il video protetto sia visibile sul monitor.
+      render: text

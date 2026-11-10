@@ -1,0 +1,151 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-press: 140ms;
+  --motion-enter: 180ms;
+  --motion-exit: 140ms;
+  --motion-dialog: 220ms;
+  --motion-popover: 160ms;
+  --motion-popover-exit: 120ms;
+  --motion-player: 280ms;
+  --mini-player-width: 310px;
+  --subtle: #8e98a9;
+}
+:root[data-theme=light] { --subtle: #5e6b7d; }
+.search-box kbd { font-size: 11px; }
+.toolbar .clock { font-size: 12px; }
+
+button {
+  transition: background-color var(--motion-press) ease, color var(--motion-press) ease,
+    box-shadow var(--motion-press) ease, transform var(--motion-press) var(--ease-out);
+}
+button:active:not(:disabled) { transform: scale(0.97); }
+html[data-input=keyboard] button:active:not(:disabled),
+html[data-input=keyboard] .channel-card:hover { transform: none; }
+.channel-main:active { transform: none !important; }
+.content-scroll { scroll-behavior: auto; overflow-anchor: none; }
+.guide-scroll, .watch-channel-list { overflow-anchor: none; }
+.page-heading h1 { letter-spacing: -0.035em; }
+.hero h2, .discovery-feature h2 { letter-spacing: -0.03em; text-wrap: balance; }
+.hero-channel { font-size: 12px; color: #b7c9e3; margin-bottom: 10px; }
+.hero { perspective: 900px; }
+.hero-mark { transform-origin: center; }
+.recent-strip { display: flex; align-items: center; gap: 18px; margin: 20px 0 26px; }
+.recent-label { font-size: 12px; white-space: nowrap; color: var(--muted); }
+.recent-strip .recent-row { min-width: 0; flex: 1; padding: 1px; }
+.recent-strip .recent-channel { min-width: 165px; max-width: 190px; padding: 9px 11px; gap: 9px; }
+.recent-strip .station-logo { width: 30px; height: 30px; min-height: 30px; border-radius: 6px; }
+.recent-strip .recent-channel strong { font-size: 11px; }
+.recent-strip .recent-channel small { font-size: 11px; }
+
+.channel-main { min-height: 202px; height: 100%; }
+.channel-number { font-size: 11px; }
+.station-logo img { opacity: 0; }
+.station-logo img[data-loaded] { opacity: 1; }
+.station-logo:has(img[data-loaded]:not([hidden])) > .rai-word,
+.station-logo:has(img[data-loaded]:not([hidden])) > .station-fallback { visibility: hidden; }
+.channel-programme {
+  font-size: 12px;
+  line-height: 1.45;
+  min-height: 2.9em;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.channel-card { transition: transform var(--motion-enter) var(--ease-out), box-shadow var(--motion-enter) ease; }
+.channel-play-hint { transition: opacity var(--motion-press) ease, transform var(--motion-press) var(--ease-out); }
+.favorite-button { transition: opacity var(--motion-press) ease, color var(--motion-press) ease, background-color var(--motion-press) ease; }
+.favorite-button svg, [data-favorite] svg { transform-origin: center; }
+.discovery-item strong {
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.discovery-item small { font-size: 11px; }
+.watch-channel small { font-size: 11px; }
+.toolbar-location, .sidebar-label, .sidebar-signature, .sidebar-now small, .nav-count,
+.eyebrow, .hero .eyebrow, .hero-time, .filter-bar .filter-count,
+.content-footer, .content-footer .text-button, .recent-channel small, .discovery-item .remaining,
+.guide-toolbar .button, .guide-channel .guide-channel-number, .guide-header,
+.guide-header .guide-channel, .guide-times span, .guide-channel strong, .programme-block small, .programme-gap,
+.settings-section > h2, .settings-label p, .about-lume p, .settings-note, .reminder-item small,
+.player-top, .live-badge, .live-track button, .control-channel, .video-quality,
+.player-options label, .player-options select, .watch-heading small, .watch-next span, .watch-next small,
+.watch-browser .segmented button, .watch-channel > span:first-child, .watch-channel strong,
+body:not([data-page=watch]) .player-overlay .button, #mini-expand {
+  font-size: 11px;
+}
+.nav-count { min-width: 18px; height: 18px; line-height: 18px; }
+
+.toast {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--motion-enter) var(--ease-out), transform var(--motion-enter) var(--ease-out);
+}
+.toast.removing {
+  opacity: 0;
+  transform: translateY(6px);
+  transition-duration: var(--motion-exit);
+}
+@starting-style {
+  .toast:not([data-instant]) { opacity: 0; transform: translateY(6px); }
+  dialog[open]:not([data-instant])::backdrop { opacity: 0; }
+}
+.toast[data-instant] { transition: none; }
+dialog { transform-origin: center; }
+dialog::backdrop { opacity: 1; transition: opacity var(--motion-dialog) var(--ease-out); }
+dialog[data-closing]::backdrop { opacity: 0; transition-duration: var(--motion-exit); }
+dialog[data-instant]::backdrop { transition: none; }
+.player-options { transform-origin: bottom right; }
+.player-controls { transition: opacity var(--motion-enter) var(--ease-out); }
+.player-dock, .player-dock video { transform-origin: 0 0; }
+.player-dock[data-dock-moving] { z-index: 25; }
+.player-dock[data-dock-moving] .player-top,
+.player-dock[data-dock-moving] .player-controls,
+.player-dock[data-dock-moving] .mini-controls { opacity: 0; }
+body:not([data-page=watch]) .player-dock {
+  width: var(--mini-player-width);
+  height: calc(var(--mini-player-width) * 9 / 16 + 34px);
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+@media (max-height: 850px) {
+  .hero { min-height: 184px; padding-top: 22px; padding-bottom: 22px; }
+  .hero p { display: none; }
+  .hero-actions { margin-top: 16px; }
+  .page-heading { margin-bottom: 22px; }
+}
+@media (max-width: 850px) {
+  .channel-main { min-height: 202px; }
+  .channel-programme { font-size: 11px; }
+  .content-footer .text-button { font-size: 0; }
+}
+@media (max-width: 560px) {
+  :root { --mini-player-width: 245px; }
+  .channel-main { min-height: 198px; }
+  .recent-strip { gap: 10px; }
+  .recent-label { font-size: 11px; max-width: 48px; white-space: normal; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .channel-card:hover { transform: translateY(-2px); }
+}
+@media (hover: none), (pointer: coarse) {
+  .channel-card:hover { transform: none; }
+  .favorite-button { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  button, .channel-card, .channel-play-hint, .favorite-button, .toast, dialog::backdrop, .player-controls {
+    transition-duration: 100ms !important;
+  }
+  button:active:not(:disabled), .channel-card:hover, .channel-play-hint, .toast, .toast.removing {
+    transform: none !important;
+  }
+  @starting-style { .toast:not([data-instant]) { transform: none; } }
+}

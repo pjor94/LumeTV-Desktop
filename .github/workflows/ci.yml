@@ -1,0 +1,87 @@
+name: Rust cross-platform checks
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_ref:
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository:
+    name: Repository, documentation and Python tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Check publishable files, notices and local documentation links
+        run: python scripts/check_repository.py --tracked
+      - name: Test packaging and repository tools (fixtures only)
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Check macOS build script syntax
+        run: bash -n scripts/build_embedded_macos.sh
+
+  check:
+    name: Rust core and CEF API / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run core and loopback contract tests
+        run: cargo test --locked --all-targets
+      - name: Check Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Build
+        run: cargo build --locked
+      # dox disables the native CEF build/link step. This checks Rust API
+      # compatibility only; it does not prove SDK packaging, CDM or playback.
+      - name: Type-check embedded CEF API (no SDK or playback)
+        run: cargo check --locked --features embedded-cef,cef/dox --bins
+      - name: Type-check Windows sandbox DLL entry point
+        run: cargo check --locked -p lume-cef-windows --features dox
+      - name: Test strict native SDK pins without downloads
+        run: cargo test --locked --manifest-path vendor/download-cef/Cargo.toml --lib --target-dir target/pinned-sdk-tests
+      - name: Test browser harness and desktop UI (no live services)
+        run: node --test web/player.test.cjs web/app/app.test.cjs web/app/ui.test.cjs
+
+  packages:
+    name: Downloadable desktop packages
+    needs: [repository, check]
+    uses: ./.github/workflows/packages.yml
+    with:
+      source_ref: ${{ inputs.source_ref || github.sha }}

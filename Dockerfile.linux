@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+# Native architecture follows the Docker daemon unless --platform is explicit.
+ARG RUST_IMAGE=rust:1.92-slim-bookworm
+FROM ${RUST_IMAGE} AS source
+WORKDIR /build
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+COPY tests ./tests
+COPY web ./web
+COPY vendor ./vendor
+COPY resources ./resources
+COPY examples ./examples
+COPY crates ./crates
+COPY LICENSE THIRD_PARTY_NOTICES.md ./
+
+# Unit/fixture tests only. These do not contact television providers.
+FROM source AS checks
+RUN cargo test --locked --all-targets
+
+# Rust API/type checks only: dox skips CEF SDK download and native linking.
+# This does not initialize CEF, load a CDM, or prove Linux video playback.
+FROM checks AS cef-api-check
+RUN cargo check --locked --features embedded-cef,cef/dox --bins
+
+FROM checks AS build
+RUN cargo build --locked --release
+
+FROM debian:bookworm-slim AS runtime-base
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /build/target/release/lume-player /usr/local/bin/lume-player
+WORKDIR /work
+ENTRYPOINT ["lume-player"]
+CMD ["--help"]
+
+# Optional diagnostics. Debian Chromium does not provide a Widevine CDM here.
+# Keep the browser sandbox enabled and run the browser as an unprivileged user.
+FROM runtime-base AS diagnostic-chromium
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends chromium chromium-sandbox \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --uid 1000 --create-home --shell /bin/sh lume \
+    && mkdir -p /work/profiles /work/reports \
+    && chown -R 1000:1000 /work
+ENV HOME=/home/lume
+USER 1000:1000
+
+# Default image has no browser: use it for channel/resolver/manifest probes.
+FROM runtime-base AS runtime

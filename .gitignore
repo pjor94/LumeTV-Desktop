@@ -1,0 +1,51 @@
+# Local builds and downloaded runtimes. Keep vendor/shaka/dist in Git.
+/target/
+/.cache/
+/dist/
+/build/
+/artifacts/
+/releases/
+
+# Browser/CDM profiles, provider sessions and raw diagnostic output.
+/profiles/
+/reports/*
+!/reports/.gitkeep
+**/WidevineCdm/
+libwidevinecdm.*
+widevinecdm.dll
+*.log
+
+# Local credentials and signing material.
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+
+# Generated distributables do not belong in the source repository.
+*.app/
+*.dmg
+*.pkg
+*.msi
+*.exe
+*.dll
+*.dylib
+*.so
+
+# Editor, OS and test caches.
+.DS_Store
+._*
+Thumbs.db
+.idea/
+.vscode/
+__pycache__/
+*.py[cod]
+/.venv/
+/coverage/
+/.pytest_cache/

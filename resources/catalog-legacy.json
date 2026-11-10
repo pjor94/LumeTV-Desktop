@@ -1,0 +1,416 @@
+[
+  {
+    "id": "rai1",
+    "name": "Rai 1",
+    "number": 1,
+    "provider": "rai",
+    "key": "Rai 1",
+    "group": "Generalisti",
+    "color": "#554ee5"
+  },
+  {
+    "id": "rai2",
+    "name": "Rai 2",
+    "number": 2,
+    "provider": "rai",
+    "key": "Rai 2",
+    "group": "Generalisti",
+    "color": "#df3542"
+  },
+  {
+    "id": "rai3",
+    "name": "Rai 3",
+    "number": 3,
+    "provider": "rai",
+    "key": "Rai 3",
+    "group": "Generalisti",
+    "color": "#10a775"
+  },
+  {
+    "id": "rete4",
+    "name": "Rete 4",
+    "number": 4,
+    "provider": "mediaset",
+    "key": "$R4",
+    "group": "Generalisti",
+    "color": "#f06e22"
+  },
+  {
+    "id": "canale5",
+    "name": "Canale 5",
+    "number": 5,
+    "provider": "mediaset",
+    "key": "$C5",
+    "group": "Generalisti",
+    "color": "#346da8"
+  },
+  {
+    "id": "italia1",
+    "name": "Italia 1",
+    "number": 6,
+    "provider": "mediaset",
+    "key": "$I1",
+    "group": "Generalisti",
+    "color": "#2aa3df"
+  },
+  {
+    "id": "la7",
+    "name": "La7",
+    "number": 7,
+    "provider": "la7",
+    "key": "La7",
+    "group": "Generalisti",
+    "color": "#edb628"
+  },
+  {
+    "id": "mediaset20",
+    "name": "Mediaset 20",
+    "number": 20,
+    "provider": "mediaset",
+    "key": "$LB",
+    "group": "Cinema e serie",
+    "color": "#956aab"
+  },
+  {
+    "id": "rai4",
+    "name": "Rai 4",
+    "number": 21,
+    "provider": "rai",
+    "key": "Rai 4",
+    "group": "Cinema e serie",
+    "color": "#8a4ecd"
+  },
+  {
+    "id": "iris",
+    "name": "Iris",
+    "number": 22,
+    "provider": "mediaset",
+    "key": "$KI",
+    "group": "Cinema e serie",
+    "color": "#956aab"
+  },
+  {
+    "id": "rai5",
+    "name": "Rai 5",
+    "number": 23,
+    "provider": "rai",
+    "key": "Rai 5",
+    "group": "Cultura",
+    "color": "#d3a146"
+  },
+  {
+    "id": "raimovie",
+    "name": "Rai Movie",
+    "number": 24,
+    "provider": "rai",
+    "key": "Rai Movie",
+    "group": "Cinema e serie",
+    "color": "#8f52cd"
+  },
+  {
+    "id": "raipremium",
+    "name": "Rai Premium",
+    "number": 25,
+    "provider": "rai",
+    "key": "Rai Premium",
+    "group": "Cinema e serie",
+    "color": "#ae529b"
+  },
+  {
+    "id": "twentyseven",
+    "name": "TwentySeven",
+    "number": 27,
+    "provider": "mediaset",
+    "key": "$TS",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "la7cinema",
+    "name": "La7 Cinema",
+    "number": 29,
+    "provider": "la7",
+    "key": "La7c",
+    "group": "Intrattenimento",
+    "color": "#c6a052"
+  },
+  {
+    "id": "la5",
+    "name": "La 5",
+    "number": 30,
+    "provider": "mediaset",
+    "key": "$KA",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "cine34",
+    "name": "Cine 34",
+    "number": 34,
+    "provider": "mediaset",
+    "key": "$B6",
+    "group": "Cinema e serie",
+    "color": "#956aab"
+  },
+  {
+    "id": "focus",
+    "name": "Focus",
+    "number": 35,
+    "provider": "mediaset",
+    "key": "$FU",
+    "group": "Cultura",
+    "color": "#956aab"
+  },
+  {
+    "id": "topcrime",
+    "name": "Top Crime",
+    "number": 39,
+    "provider": "mediaset",
+    "key": "$LT",
+    "group": "Cinema e serie",
+    "color": "#956aab"
+  },
+  {
+    "id": "boing",
+    "name": "Boing",
+    "number": 40,
+    "provider": "mediaset",
+    "key": "$KB",
+    "group": "Bambini",
+    "color": "#956aab"
+  },
+  {
+    "id": "raigulp",
+    "name": "Rai Gulp",
+    "number": 42,
+    "provider": "rai",
+    "key": "Rai Gulp",
+    "group": "Bambini",
+    "color": "#e28524"
+  },
+  {
+    "id": "raiyoyo",
+    "name": "Rai YoYo",
+    "number": 43,
+    "provider": "rai",
+    "key": "Rai Yoyo",
+    "group": "Bambini",
+    "color": "#65a833"
+  },
+  {
+    "id": "cartoonito",
+    "name": "Cartoonito",
+    "number": 46,
+    "provider": "mediaset",
+    "key": "$LA",
+    "group": "Bambini",
+    "color": "#956aab"
+  },
+  {
+    "id": "rainews24",
+    "name": "Rai News 24",
+    "number": 48,
+    "provider": "rai",
+    "key": "Rai News 24",
+    "group": "Notizie",
+    "color": "#4179c6"
+  },
+  {
+    "id": "italia2",
+    "name": "Italia 2",
+    "number": 49,
+    "provider": "mediaset",
+    "key": "$I2",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "tgcom24",
+    "name": "TgCom 24",
+    "number": 51,
+    "provider": "mediaset",
+    "key": "$KF",
+    "group": "Notizie",
+    "color": "#ba323c"
+  },
+  {
+    "id": "raistoria",
+    "name": "Rai Storia",
+    "number": 54,
+    "provider": "rai",
+    "key": "Rai Storia",
+    "group": "Cultura",
+    "color": "#526cc3"
+  },
+  {
+    "id": "mediasetextra",
+    "name": "Mediaset Extra",
+    "number": 55,
+    "provider": "mediaset",
+    "key": "$KQ",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "italiana",
+    "name": "Italiana",
+    "number": 57,
+    "provider": "rai",
+    "key": "Italiana",
+    "group": "Cultura",
+    "color": "#526cc3"
+  },
+  {
+    "id": "raisport",
+    "name": "Rai Sport",
+    "number": 58,
+    "provider": "rai",
+    "key": "Rai Sport",
+    "group": "Sport",
+    "color": "#70a944"
+  },
+  {
+    "id": "radio105tv",
+    "name": "Radio 105 TV",
+    "number": 66,
+    "provider": "mediaset",
+    "key": "$EC",
+    "group": "Musica",
+    "color": "#956aab"
+  },
+  {
+    "id": "r101tv",
+    "name": "R101 TV",
+    "number": 67,
+    "provider": "mediaset",
+    "key": "$ER",
+    "group": "Musica",
+    "color": "#956aab"
+  },
+  {
+    "id": "rai4k",
+    "name": "Rai 4K",
+    "number": 101,
+    "provider": "rai",
+    "key": "Rai 4K",
+    "group": "Cultura",
+    "color": "#526cc3"
+  },
+  {
+    "id": "rairadio2",
+    "name": "Rai Radio 2",
+    "number": 702,
+    "provider": "rai",
+    "key": "Rai Radio 2",
+    "group": "Intrattenimento",
+    "color": "#526cc3"
+  },
+  {
+    "id": "raiplay1",
+    "name": "Rai Play 1",
+    "number": 908,
+    "provider": "rai",
+    "key": "RaiPlay",
+    "group": "Generalisti",
+    "color": "#526cc3"
+  },
+  {
+    "id": "raiplay2",
+    "name": "Rai Play 2",
+    "number": 909,
+    "provider": "rai",
+    "key": "RaiPlay 2",
+    "group": "Generalisti",
+    "color": "#526cc3"
+  },
+  {
+    "id": "raiplay3",
+    "name": "Rai Play 3",
+    "number": 910,
+    "provider": "rai",
+    "key": "RaiPlay 3",
+    "group": "Generalisti",
+    "color": "#526cc3"
+  },
+  {
+    "id": "grandefratelloparty",
+    "name": "GF Party",
+    "number": 915,
+    "provider": "mediaset",
+    "key": "$B1",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "grandefratello1",
+    "name": "GF Regia 1",
+    "number": 916,
+    "provider": "mediaset",
+    "key": "$B7",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "grandefratello2",
+    "name": "GF Regia 2",
+    "number": 917,
+    "provider": "mediaset",
+    "key": "$B8",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "grandefratelloplus1",
+    "name": "GF Un'ora fa",
+    "number": 918,
+    "provider": "mediaset",
+    "key": "$B9",
+    "group": "Intrattenimento",
+    "color": "#956aab"
+  },
+  {
+    "id": "radiomontecarlotv",
+    "name": "Radio Monte Carlo TV",
+    "number": 926,
+    "provider": "mediaset",
+    "key": "$BB",
+    "group": "Musica",
+    "color": "#956aab"
+  },
+  {
+    "id": "virgintv",
+    "name": "Virgin Radio TV",
+    "number": 930,
+    "provider": "mediaset",
+    "key": "$EW",
+    "group": "Musica",
+    "color": "#956aab"
+  },
+  {
+    "id": "raiplaysport1",
+    "name": "Rai Play Sport 1",
+    "number": 953,
+    "provider": "rai",
+    "key": "RaiPlay Sport 1",
+    "group": "Sport",
+    "color": "#526cc3"
+  },
+  {
+    "id": "raiplaysport2",
+    "name": "Rai Play Sport 2",
+    "number": 954,
+    "provider": "rai",
+    "key": "RaiPlay Sport 2",
+    "group": "Sport",
+    "color": "#526cc3"
+  },
+  {
+    "id": "raiplaysport3",
+    "name": "Rai Play Sport 3",
+    "number": 955,
+    "provider": "rai",
+    "key": "RaiPlay Sport 3",
+    "group": "Sport",
+    "color": "#526cc3"
+  }
+]
