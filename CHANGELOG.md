@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 — pre-release
+## 0.1.0 — 10 novembre 2026 (pre-release)
 
 - Prototipo Rust con player CEF incorporato; bundle di sviluppo macOS arm64.
 - Catalogo di 126 canali, aggiornamento della lista e guida XMLTV/XZ con cache locale.

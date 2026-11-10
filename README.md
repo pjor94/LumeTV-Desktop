@@ -120,7 +120,7 @@ rimane disponibile in [Compilazione](#compilazione).
 | --- | --- |
 | macOS Apple Silicon | Build e finestra Rust/CEF eseguite; metriche di riproduzione verificate su Rai 1, Canale 5 e La7. |
 | macOS Intel | DMG e ZIP compilati su runner nativo; controllo dei metadati dal pacchetto superato. Riproduzione da verificare. |
-| Windows x64 | Build nativa e controllo dei metadati superati; confezionamento ZIP in verifica. Riproduzione da verificare. |
+| Windows x64 | ZIP compilato su runner nativo con bootstrap sandbox; controllo dei metadati dal pacchetto superato. Riproduzione da verificare. |
 | Linux x64 | DEB e tar.gz compilati su runner nativo; controllo dei metadati dal pacchetto superato. Riproduzione desktop da verificare. |
 
 Le build includono CEF e gli avvisi dei componenti. Il controllo automatico
