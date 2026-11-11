@@ -1,8 +1,97 @@
 # Stato del progetto e verifiche
 
-Ultimo aggiornamento dei sorgenti: **10 novembre 2026**. Le prove live riportate
-qui sono dell’**8 novembre 2026**; la disponibilità delle emittenti può essere
-cambiata da allora.
+Ultimo aggiornamento dei sorgenti: **11 novembre 2026**. Le nuove prove della UI
+React sono descritte qui sotto; le sezioni successive conservano i risultati
+dell’8 e 10 novembre. La disponibilità delle emittenti può cambiare.
+
+## Preparazione della 0.2.0
+
+Versioni Rust, DLL Windows, frontend e lockfile sono allineati a `0.2.0`.
+I tag ordinari pubblicano release normali marcate Latest; i tag beta/rc
+pubblicano anteprime e il feed firmato usa lo stesso canale. Le anteprime sono
+escluse per impostazione iniziale nell’app. La chiave di firma è configurata
+come secret del repository.
+
+Sono passati 82 test Rust, 36 JavaScript, 66 Python e 21 scenari browser.
+I nuovi test controllano la classificazione della release, la corrispondenza
+con il feed firmato, le versioni nei manifest e le note del changelog.
+Formattazione, Clippy, bundle React e controlli dei file pubblici sono passati.
+
+La release GitHub 0.1.0 è stata riclassificata come normale e Latest, mantenendo
+i suoi 19 allegati e le note. La 0.2.0 è preparata in locale: la pubblicazione
+richiede ancora l’invio del commit e del tag e il successo delle quattro build.
+Il comando `release_desktop.py prepare` salva le note e il piano locale senza
+pubblicare. Il collaudo nativo dell’updater sugli altri sistemi e il passaggio
+fra due release complete restano aperti.
+
+## Aggiornamenti dell’app dell’11 novembre
+
+Il codice include controllo delle release GitHub, preferenze del canale,
+download con avanzamento e annullamento, firma Ed25519 e verifica SHA-256.
+L’helper sostituisce il pacchetto completo nelle cartelle scrivibili e conserva
+la copia precedente. Il DEB usa il gestore di sistema. Il feed viene firmato
+nel job di pubblicazione; le vecchie release senza feed sono ignorate.
+
+Sono passati 82 test Rust, 36 test JavaScript e 60 Python. I 21 scenari browser
+comprendono download, annullamento, errori di verifica, impostazioni, installazione
+dopo l’arresto della TV e assenza di avvisi sopra la diretta. La schermata è stata
+controllata nei due temi a 820 e 1280 pixel.
+
+Su macOS arm64 l’helper funziona fuori dal bundle, senza dipendenze da CEF.
+La schermata Impostazioni nella finestra nativa ha completato il controllo
+reale di GitHub e mostrato l’assenza di versioni più recenti ammissibili.
+Una prova con bundle di fixture firmati ha verificato firma del feed, conferma
+dell’helper, attesa del processo, estrazione dello ZIP con link del framework,
+sostituzione da 0.1.0 a 0.1.1 e conservazione della copia precedente.
+Il ripristino dopo un errore di spostamento è coperto da un test dedicato.
+Questa prova usa eseguibili di fixture, non la TV completa. L’aggiornamento
+tra due release reali e le prove native Windows/Linux e Mac Intel restano da
+eseguire. La release pubblica 0.1.0 non dispone di updater: il primo passaggio
+richiede un’installazione manuale. Dettagli in [UPDATES.md](UPDATES.md).
+La secret di firma del repository è stata configurata con l’autorizzazione del
+proprietario. La chiave privata resta esclusa dai sorgenti e dai pacchetti.
+
+## Migrazione React dell’11 novembre
+
+Interfaccia React e TypeScript con CSS, icone e animazioni della versione
+precedente. Player e sessioni restano separati dalle pagine. La preparazione di
+Widevine legge lo stato del component updater CEF e mostra attività, installazione,
+errori e indicazione di riavvio Linux quando necessaria.
+
+Sono passati 69 test Rust, 36 test unitari JavaScript e 56 Python. I test browser
+coprono 16 scenari della UI di distribuzione. Preparazione iniziale e continuità
+del player sono state verificate anche con React in sviluppo e StrictMode attivo.
+Il confronto di 22 catture, nei due
+temi e alle larghezze di 820 e 1280 pixel, ha mantenuto la composizione precedente.
+
+Nella UI nativa macOS arm64 sono state misurate queste riproduzioni:
+
+| Canale | Avanzamento misurato | Video decodificato | DRM |
+| --- | --- | --- | --- |
+| Rai 1 | 77,887 s | 1920 × 1080 | Non richiesto |
+| Canale 5 | 119,885 s | 1280 × 720 | Verificato: evento cifrato, licenza riuscita e chiave utilizzabile |
+| La7 | 61,861 s | 1280 × 720 | Verificato: evento cifrato, licenza riuscita e chiave utilizzabile |
+
+Su Canale 5 sono stati provati anche fullscreen e mini-player. Il profilo di
+prova contiene Widevine 4.10.3112.0, preparato da CEF senza copia da Chrome.
+Il componente era già disponibile all’avvio della riproduzione: gli stati della
+barra, gli errori e il riavvio Linux sono stati verificati con fixture.
+L’audio era disattivato; l’ascolto e la conferma diretta sul monitor delle immagini
+protette restano da completare. Le catture macOS dei due canali protetti sono nere.
+
+Il [riepilogo delle misure](evidence/2026-11-11-react.json) conserva soltanto dati
+selezionati. La [guida al frontend](FRONTEND.md) descrive struttura e comandi.
+La build macOS è pronta; build e riproduzione della nuova versione su Windows e
+Linux restano da verificare sui rispettivi sistemi. I tentativi locali di cross
+check si sono fermati sulle toolchain C di destinazione mancanti nel Mac.
+
+La preparazione obbligatoria all’avvio è stata provata anche nella finestra nativa
+macOS con un nuovo profilo. Widevine 4.10.3112.0 è stato installato e il catalogo
+si è aperto dopo la verifica, senza selezionare un canale: nessuna sessione o evento
+di riproduzione nel riepilogo finale. Errori, riprova e riapertura Linux sono stati
+controllati con fixture; la prova nativa Linux resta da eseguire.
+
+## Risultati precedenti
 
 Il [riepilogo JSON pubblico](evidence/2026-11-08.json) raccoglie le metriche
 selezionate per la condivisione e i checksum dei file locali da cui provengono.
@@ -17,9 +106,9 @@ I report completi e i log restano locali in `reports/`, esclusi da Git.
 | macOS Intel | Build nativa, DMG/ZIP e controllo dei metadati dal pacchetto superati in CI. | Finestra, riproduzione, Widevine e collaudo prolungato. |
 | Windows | ZIP x64 con bootstrap sandbox e controllo dei metadati dal pacchetto superati in CI. | Finestra, Widevine e riproduzione desktop. |
 | Linux | DEB/tar.gz x64 e controllo dei metadati dal pacchetto superati in CI. Nelle prove storiche: core Docker arm64 e Rai 1 headless. | Finestra CEF desktop, GPU, CDM e riproduzione. |
-| Autoaggiornamento app | Non implementato. | Canale di rilascio, download verificato, installazione e recupero dopo errori. |
+| Autoaggiornamento app | Codice, UI, feed firmato, test di verifica e sostituzione nativa macOS con fixture. | Pubblicazione della prima build con updater, passaggio fra release reali e prove native sugli altri sistemi. |
 
-I controlli del core Rust e delle API CEF sono passati sui tre sistemi.
+I controlli del core Rust e delle API CEF della release 0.1.0 sono passati sui tre sistemi.
 Il controllo con `cef/dox` verifica le API Rust senza collegare o avviare CEF.
 
 ## Pacchetti desktop del 10 novembre

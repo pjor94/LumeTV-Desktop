@@ -21,8 +21,10 @@ import tempfile
 import tomllib
 
 import build_desktop
+import check_frontend
 import check_repository
 import prepare_cef_sdk as cef_sdk
+import update_feed
 
 ROOT = Path(__file__).resolve().parents[1]
 TAG = re.compile(r"v(\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?)\Z")
@@ -34,20 +36,44 @@ def validate_tag(tag: str, version: str) -> None:
         raise ValueError("Tag must be v followed by the exact Cargo package version")
 
 
-def release_metadata(tag: str, *, root: Path = ROOT) -> dict:
+def source_metadata(tag: str, *, root: Path = ROOT) -> dict:
     version = build_desktop.app_version(root)
     validate_tag(tag, version)
     windows = tomllib.loads((root / "crates/lume-cef-windows/Cargo.toml").read_text())
     if windows["package"]["version"] != version:
         raise ValueError("Windows DLL and application versions differ")
-    if version not in (root / "CHANGELOG.md").read_text():
-        raise ValueError("Release version absent from changelog")
+    ui = root / "web/app"
+    package = json.loads((ui / "package.json").read_text())
+    lock = json.loads((ui / "package-lock.json").read_text())
+    if any(item != version for item in (package["version"], lock["version"], lock["packages"][""]["version"])):
+        raise ValueError("Frontend and application versions differ")
+    cargo = tomllib.loads((root / "Cargo.lock").read_text())
+    packages = [p for p in cargo["package"] if p["name"] in {"lume-player", "lume-cef-windows"}]
+    if len(packages) != 2 or any(p["version"] != version for p in packages):
+        raise ValueError("Cargo lockfile and application versions differ")
+    changelog_notes(version, root=root)
     revision = build_desktop.source_revision(root)
+    if not re.fullmatch(r"[0-9a-f]{40,64}", revision):
+        raise ValueError("Invalid source commit")
+    return {"tag": tag, "version": version, "revision": revision,
+            "prerelease": "-" in version}
+
+
+def release_metadata(tag: str, *, root: Path = ROOT) -> dict:
+    metadata = source_metadata(tag, root=root)
     tagged = subprocess.check_output(["git", "rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}"],
                                      cwd=root, text=True).strip()
-    if not re.fullmatch(r"[0-9a-f]{40,64}", revision) or tagged != revision:
+    if tagged != metadata["revision"]:
         raise ValueError("Checked-out commit differs from the existing version tag")
-    return {"tag": tag, "version": version, "revision": revision}
+    return metadata
+
+
+def changelog_notes(version: str, *, root: Path = ROOT) -> str:
+    section = re.search(r"^## " + re.escape(version) + r"(?:[ \t][^\n]*)?\n(.*?)(?=^## |\Z)",
+                        (root / "CHANGELOG.md").read_text(), re.MULTILINE | re.DOTALL)
+    if not section or not section[1].strip():
+        raise ValueError("Release version absent from changelog or notes empty")
+    return section[1].strip()
 
 
 def canonical_tar(info: tarfile.TarInfo) -> tarfile.TarInfo:
@@ -190,64 +216,120 @@ def verify_assets(directory: Path, version: str, revision: str) -> list[Path]:
     return sorted(assets)
 
 
+def render_notes(metadata: dict, *, root: Path = ROOT) -> str:
+    version = metadata["version"]
+    base = f"https://github.com/pjor94/LumeTV-Desktop/releases/download/v{version}/LumeTV-{version}"
+    channel = "Versione di anteprima.\n\n" if metadata["prerelease"] else ""
+    return (
+        f'# Lume TV Desktop {metadata["tag"]}\n\n{channel}'
+        "## Novità\n\n" + changelog_notes(version, root=root) + "\n\n"
+        "## Download\n\n"
+        "| Sistema | Pacchetti |\n| --- | --- |\n"
+        f"| macOS 13+ Apple Silicon | [DMG]({base}-macos-arm64.dmg) · [ZIP]({base}-macos-arm64.zip) |\n"
+        f"| macOS 13+ Intel | [DMG]({base}-macos-x64.dmg) · [ZIP]({base}-macos-x64.zip) |\n"
+        f"| Windows x64 | [ZIP portabile]({base}-windows-x64.zip) |\n"
+        f"| Linux x64 / Ubuntu 24.04 | [DEB]({base}-linux-x64.deb) · [tar.gz]({base}-linux-x64.tar.gz) |\n\n"
+        "Su macOS copia Lume TV.app in Applicazioni. Su Windows estrai tutta la cartella "
+        "e avvia LumeTV.exe, lasciando DLL e risorse al loro posto. Il DEB installa "
+        "le dipendenze e l’helper sandbox; il tar.gz richiede user namespace disponibili.\n\n"
+        "## Passaggio dalla 0.1.0\n\n"
+        "La 0.1.0 non ha l’updater: chiudi Lume e installa questa versione dal pacchetto. "
+        "Preferiti e impostazioni restano nella cartella dati dell’utente. Dalla 0.2.0 "
+        "puoi controllare e scaricare le nuove versioni nelle Impostazioni dell’app.\n\n"
+        "Al primo avvio Lume prepara Widevine prima di aprire il catalogo. "
+        "Serve Internet e possono volerci alcuni minuti. Chi ha già un componente "
+        "utilizzabile passa direttamente al catalogo. Il player usa CEF incorporato: "
+        "non serve installare Chrome.\n\n"
+        "## Verifiche e limiti\n\n"
+        "macOS usa una firma ad hoc senza notarizzazione; Windows non ha una firma "
+        "Authenticode. La firma Ed25519 dell’updater verifica la provenienza dei pacchetti "
+        "e rimane distinta dai controlli del sistema operativo.\n\n"
+        "Le prove di riproduzione disponibili riguardano macOS Apple Silicon. "
+        "Immagine sul monitor e ascolto dei canali protetti, aggiornamenti fra release "
+        "complete e collaudo desktop degli altri sistemi restano da completare. "
+        "Lo stato dettagliato delle prove è in "
+        "[STATUS.md](https://github.com/pjor94/LumeTV-Desktop/blob/" + metadata["revision"] + "/docs/STATUS.md).\n\n"
+        f'Pacchetti e [sorgenti]({base}-source.tar.gz) corrispondono al commit `{metadata["revision"]}`. '
+        "I sorgenti includono dipendenze Cargo e licenze. SHA256SUMS.txt contiene "
+        "le impronte degli allegati; update.json e update.sig sono usati dall’app.\n"
+    )
+
+
+def prepare(tag: str, directory: Path, *, root: Path = ROOT) -> Path:
+    metadata = source_metadata(tag, root=root)
+    if subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True).strip():
+        raise ValueError("Local release preparation requires committed, reviewed source")
+    check_frontend.check(root)
+    names = check_repository.git_files(root, tracked_only=True)
+    findings = check_repository.audit_files(root, names)
+    findings += ["Missing required source file: " + name for name in sorted(check_repository.REQUIRED_FILES - set(names))]
+    if findings:
+        raise ValueError("Source snapshot failed repository checks: " + "; ".join(findings))
+    directory = directory.resolve()
+    if not directory.is_relative_to(root.resolve()):
+        raise ValueError("Local release output must be inside the project")
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "RELEASE_NOTES.md").write_text(render_notes(metadata, root=root), encoding="utf-8")
+    plan = {**metadata, "local_only": True, "release_created": False,
+            "native_targets": list(cef_sdk.pins()), "required_secret": "LUME_UPDATE_SIGNING_KEY",
+            "publication": "Push the reviewed commit and its version tag only when ready to publish."}
+    (directory / "release-plan.json").write_text(json.dumps(plan, indent=2) + "\n")
+    return directory
+
+
 def collect(tag: str, directory: Path, *, root: Path = ROOT) -> list[Path]:
     metadata = release_metadata(tag, root=root)
     assets = verify_assets(directory, metadata["version"], metadata["revision"])
     checksums = directory / "SHA256SUMS.txt"
     checksums.write_text("".join(f"{cef_sdk.sha256(p)}  {p.name}\n" for p in assets))
-    notes = directory / "RELEASE_NOTES.md"
-    notes.write_text(
-        f'# Lume TV Desktop {tag}\n\n'
-        "Lume TV porta il catalogo delle dirette italiane "
-        "sul computer, con player integrato, guida TV, ricerca, preferiti e mini-player. "
-        "È una versione di prova: l’aggiornamento automatico dell’app è ancora da implementare.\n\n"
-        f'Pacchetti compilati dal commit `{metadata["revision"]}`.\n\n'
-        "| Sistema | Pacchetti |\n| --- | --- |\n"
-        "| macOS 13+ Apple Silicon | DMG e ZIP |\n| macOS 13+ Intel | DMG e ZIP |\n"
-        "| Windows x64 | ZIP portabile: estrai e avvia LumeTV.exe |\n"
-        "| Linux x64 / Ubuntu 24.04 | DEB e tar.gz |\n\n"
-        "Il DEB installa l'helper sandbox CEF con i permessi standard; il tar richiede user namespace disponibili.\n\n"
-        "Il player usa CEF incorporato: non serve installare Chrome. Widevine viene "
-        "scaricato separatamente nel profilo dell’app, quando disponibile; il primo avvio "
-        "di una diretta protetta può richiedere alcuni minuti.\n\n"
-        "Le firme sono di sviluppo: macOS usa una firma ad hoc, senza notarizzazione; "
-        "Windows non ha una firma Authenticode.\n\n"
-        "La pipeline verifica compilazione, caricamento nativo e contenuto, senza contattare le emittenti. "
-        "Su macOS Apple Silicon sono state raccolte metriche di riproduzione per Rai, Mediaset e La7. "
-        "La conferma sul monitor del video protetto nell’ultima build resta da completare: "
-        "le catture mostrano un’area video nera. Video, audio e DRM su Windows/Linux e Mac Intel "
-        "richiedono prove desktop dedicate.\n\n"
-        "Sono allegati i sorgenti dello stesso commit con le dipendenze Cargo e le licenze. "
-        "Usa SHA256SUMS.txt per verificare gli allegati scaricati.\n", encoding="utf-8")
+    (directory / "RELEASE_NOTES.md").write_text(render_notes(metadata, root=root), encoding="utf-8")
     return assets + [checksums]
 
 
-def publish(tag: str, directory: Path) -> None:
+def publication_command(tag: str, directory: Path, assets: list[Path]) -> list[str]:
+    version = tag.removeprefix("v")
+    validate_tag(tag, version)
+    channel = ["--prerelease", "--latest=false"] if "-" in version else ["--latest"]
+    return ["gh", "release", "create", tag, "--repo", "pjor94/LumeTV-Desktop", "--verify-tag", *channel,
+            "--title", "Lume TV Desktop " + tag, "--notes-file", str(directory / "RELEASE_NOTES.md"),
+            *map(str, assets)]
+
+
+def publish(tag: str, directory: Path, *, root: Path = ROOT) -> None:
     if os.environ.get("GITHUB_ACTIONS") != "true" or not os.environ.get("GH_TOKEN"):
         raise ValueError("Publication is reserved for the authenticated GitHub release job")
-    assets = collect(tag, directory)
+    assets = collect(tag, directory, root=root)
+    private_key = os.environ.get("LUME_UPDATE_SIGNING_KEY")
+    if not private_key:
+        raise ValueError("The release requires LUME_UPDATE_SIGNING_KEY")
+    version = tag.removeprefix("v")
+    notes = changelog_notes(version, root=root)
+    manifest = update_feed.build_manifest(directory, version, "-" in version, notes)
+    assets += update_feed.sign_manifest(manifest, directory, private_key)
+    checksums = directory / "SHA256SUMS.txt"
+    checksums.write_text("".join(f"{cef_sdk.sha256(p)}  {p.name}\n" for p in assets if p != checksums))
     # No --clobber: an existing release must be reviewed instead of overwritten.
-    subprocess.run(["gh", "release", "create", tag, "--verify-tag", "--prerelease",
-                    "--latest=false", "--title", "Lume TV Desktop " + tag,
-                    "--notes-file", str(directory / "RELEASE_NOTES.md"),
-                    *map(str, assets)], cwd=ROOT, check=True)
+    subprocess.run(publication_command(tag, directory, assets), cwd=root, check=True)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("metadata", "source", "collect", "publish"))
+    parser.add_argument("command", choices=("prepare", "metadata", "source", "collect", "publish"))
     parser.add_argument("--tag", default=os.environ.get("RELEASE_TAG", ""))
-    parser.add_argument("--directory", type=Path, default=ROOT / "dist")
+    parser.add_argument("--directory", type=Path)
     args = parser.parse_args()
-    if args.command == "metadata":
+    directory = args.directory or (ROOT / ".cache/release" if args.command == "prepare" else ROOT / "dist")
+    if args.command == "prepare":
+        print(prepare(args.tag, directory))
+    elif args.command == "metadata":
         data = release_metadata(args.tag)
         if os.environ.get("GITHUB_OUTPUT"):
             with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
-                output.write("".join(f"{key}={value}\n" for key, value in data.items()))
+                output.write("".join(f"{key}={str(value).lower() if isinstance(value, bool) else value}\n" for key, value in data.items()))
         print(json.dumps(data))
     elif args.command == "source":
-        print(package_source(output=args.directory))
+        print(package_source(output=directory))
     elif args.command == "collect":
-        print(json.dumps([path.name for path in collect(args.tag, args.directory)]))
+        print(json.dumps([path.name for path in collect(args.tag, directory)]))
     else:
-        publish(args.tag, args.directory)
+        publish(args.tag, directory)

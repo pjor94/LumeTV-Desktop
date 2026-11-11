@@ -1,6 +1,24 @@
 # Changelog
 
-## 0.1.0 — 10 novembre 2026 (pre-release)
+## 0.2.0
+
+- Aggiornamenti dell’app dalle release GitHub: controllo in background, download
+  con percentuale e annullamento, firma Ed25519 e verifica SHA-256.
+- Installazione del pacchetto completo con riavvio per bundle e cartelle portabili
+  scrivibili; gestore pacchetti per il DEB e copia precedente conservata.
+- Feed firmato nel job di pubblicazione e helper incluso nei quattro pacchetti.
+- Preparazione Widevine all’avvio: schermata dedicata prima del catalogo,
+  verifica senza aprire una diretta e riprova in caso di errore.
+- Interfaccia React e TypeScript con stile, navigazione e animazioni di Lume.
+- Player persistente e logica separata per catalogo, guida e preferenze.
+- Stato del download Widevine dal component updater CEF, barra di attività,
+  errori con riprova e indicazione di riavvio su Linux dopo una nuova installazione.
+- Build frontend riproducibile, asset incorporati verificati e test browser in CI.
+- Release GitHub ordinarie per i tag di versione; anteprime solo per tag beta/rc.
+- Canale delle anteprime disattivato per impostazione iniziale.
+- README e note di rilascio aggiornati, con istruzioni per chi arriva dalla 0.1.0.
+
+## 0.1.0 — 10 novembre 2026
 
 - Prototipo Rust con player CEF incorporato; bundle di sviluppo macOS arm64.
 - Catalogo di 126 canali, aggiornamento della lista e guida XMLTV/XZ con cache locale.
@@ -14,5 +32,6 @@
 - Pre-release da tag, checksum e sorgenti corrispondenti con dipendenze Cargo.
 - Bootstrap sandbox Windows, SDK OBS verificati e raccolta degli avvisi nei pacchetti.
 
-Windows/Linux desktop, installer di produzione e aggiornamento automatico
-dell’applicazione restano da completare. Vedi [stato delle verifiche](docs/STATUS.md).
+Nella release 0.1.0 le prove desktop Windows/Linux, gli installer di produzione
+e l’aggiornamento dell’applicazione restavano da completare.
+Vedi [stato delle verifiche](docs/STATUS.md).

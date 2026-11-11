@@ -1,0 +1,32 @@
+{
+  "name": "lumetv-desktop-ui",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build && python3 ../../scripts/check_frontend.py --stamp",
+    "build:development": "tsc --noEmit && vite build --mode development",
+    "dev": "vite build --watch --mode development",
+    "check": "tsc --noEmit",
+    "format": "prettier --write src tests *.ts index.html package.json",
+    "check:format": "prettier --check src tests *.ts index.html package.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:browser": "playwright test",
+    "check:bundle": "python3 ../../scripts/check_frontend.py"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.8"
+  }
+}

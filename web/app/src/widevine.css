@@ -1,0 +1,44 @@
+#app {
+  display: contents;
+}
+.widevine-setup {
+  width: min(280px, 90%);
+  margin: 18px auto 0;
+}
+.widevine-progress {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(153, 202, 255, 0.16);
+}
+.widevine-progress span {
+  display: block;
+  width: 38%;
+  height: 100%;
+  background: #99caff;
+  transform: translateX(-110%);
+  animation: widevine-download 1.5s ease-in-out infinite;
+}
+.widevine-elapsed {
+  display: block;
+  margin-top: 10px;
+  color: #b7c9e3;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.widevine-setup[data-phase='error'] .widevine-elapsed {
+  color: #e7a9ac;
+}
+@keyframes widevine-download {
+  to {
+    transform: translateX(365%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .widevine-progress span {
+    animation: none;
+    transform: none;
+    width: 100%;
+    opacity: 0.7;
+  }
+}

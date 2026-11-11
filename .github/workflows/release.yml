@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag matching Cargo.toml, for example v0.1.0
+        description: Existing version tag matching Cargo.toml, for example v0.2.0
         required: true
         type: string
 
@@ -48,7 +48,7 @@ jobs:
       source_ref: ${{ needs.metadata.outputs.revision }}
 
   publish:
-    name: Publish the experimental desktop pre-release
+    name: Publish desktop release
     needs: [metadata, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -75,4 +75,5 @@ jobs:
       - name: Publish all verified assets together
         env:
           GH_TOKEN: ${{ github.token }}
+          LUME_UPDATE_SIGNING_KEY: ${{ secrets.LUME_UPDATE_SIGNING_KEY }}
         run: python scripts/release_desktop.py publish

@@ -6,6 +6,8 @@ use crate::{
     preferences::PreferenceStore,
     providers::Resolver,
     server::HarnessServer,
+    updater::UpdateService,
+    widevine::WidevineService,
 };
 use anyhow::{anyhow, Context, Result};
 use reqwest::blocking::Client;
@@ -47,6 +49,8 @@ struct DesktopState {
     resolver: Resolver,
     relay: Client,
     artwork: Client,
+    widevine: Arc<WidevineService>,
+    updater: Arc<UpdateService>,
 }
 
 pub struct DesktopServer {
@@ -57,6 +61,12 @@ pub struct DesktopServer {
 }
 
 impl DesktopServer {
+    pub fn updater_service(&self) -> Arc<UpdateService> {
+        self.state.updater.clone()
+    }
+    pub fn widevine_service(&self) -> Arc<WidevineService> {
+        self.state.widevine.clone()
+    }
     /// A local diagnostic snapshot with no stream URLs, tokens or license data.
     pub fn playback_snapshot(&self) -> Value {
         playback_snapshot(&self.state)
@@ -112,6 +122,8 @@ impl DesktopServer {
             resolver: Resolver::new()?,
             relay,
             artwork,
+            widevine: Arc::new(WidevineService::default()),
+            updater: UpdateService::new(directory),
         });
         state.catalog.refresh(false);
         state.guide.refresh(false);
@@ -143,6 +155,7 @@ impl DesktopServer {
 
 impl Drop for DesktopServer {
     fn drop(&mut self) {
+        self.state.updater.stop();
         self.state.stop.store(true, Ordering::Relaxed);
         if let Some(handle) = self.handle.take() {
             let _ = handle.join();
@@ -184,23 +197,15 @@ pub fn asset(path: &str) -> Option<(&'static str, &'static [u8])> {
     match path {
         "/" => Some((
             "text/html; charset=utf-8",
-            include_bytes!("../web/app/index.html"),
+            include_bytes!("../web/app/bundle/index.html"),
         )),
         "/app.css" => Some((
             "text/css; charset=utf-8",
-            include_bytes!("../web/app/app.css"),
+            include_bytes!("../web/app/bundle/app.css"),
         )),
         "/app.js" => Some((
             "text/javascript; charset=utf-8",
-            include_bytes!("../web/app/app.js"),
-        )),
-        "/ui.js" => Some((
-            "text/javascript; charset=utf-8",
-            include_bytes!("../web/app/ui.js"),
-        )),
-        "/motion.css" => Some((
-            "text/css; charset=utf-8",
-            include_bytes!("../web/app/motion.css"),
+            include_bytes!("../web/app/bundle/app.js"),
         )),
         "/player.js" => Some((
             "text/javascript; charset=utf-8",
@@ -271,6 +276,8 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
             "/api/playback/status" => {
                 respond_json(request, 200, playback_snapshot(state));
             }
+            "/api/widevine" => respond_json(request, 200, json!(state.widevine.snapshot())),
+            "/api/updates" => respond_json(request, 200, json!(state.updater.snapshot())),
             _ if path.starts_with("/art/channel/") => channel_art(request, state, &path[13..]),
             _ => respond_json(request, 404, json!({"error":"not_found"})),
         }
@@ -296,6 +303,31 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
         return;
     };
     match path.as_str() {
+        "/api/updates/check" => respond_json(
+            request,
+            200,
+            json!(state
+                .updater
+                .check(value.get("manual").and_then(Value::as_bool).unwrap_or(true))),
+        ),
+        "/api/updates/cancel" => respond_json(request, 200, json!(state.updater.cancel())),
+        "/api/updates/download" | "/api/updates/install" | "/api/updates/settings" => {
+            let result = match path.as_str() {
+                "/api/updates/download" => state.updater.download(),
+                "/api/updates/install" => state.updater.install(),
+                _ => state.updater.settings(
+                    value.get("automatic").and_then(Value::as_bool),
+                    value.get("preview").and_then(Value::as_bool),
+                ),
+            };
+            match result {
+                Ok(snapshot) => respond_json(request, 200, json!(snapshot)),
+                Err(error) => respond_json(request, 409, json!({"error":error})),
+            }
+        }
+        "/api/widevine/update" => {
+            respond_json(request, 200, json!(state.widevine.request_update()))
+        }
         "/api/catalog/refresh" => {
             state.catalog.refresh(true);
             respond_json(request, 200, json!(state.catalog.snapshot()));

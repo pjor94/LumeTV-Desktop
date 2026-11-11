@@ -1,0 +1,90 @@
+.startup-screen {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: var(--background);
+}
+.startup-content {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+}
+.startup-brand {
+  margin-bottom: 44px;
+}
+.startup-brand img {
+  width: 164px;
+  height: 54px;
+  object-fit: contain;
+  margin: auto;
+}
+.startup-brand .brand-light {
+  display: block;
+}
+:root[data-theme='light'] .startup-brand .brand-light {
+  display: none;
+}
+.startup-content h1 {
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.startup-introduction {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+.startup-status {
+  margin-top: 38px;
+}
+.startup-status h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.startup-status p {
+  margin: 10px auto 0;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+.startup-progress {
+  margin-top: 25px;
+  background: var(--raised);
+}
+.startup-progress span {
+  background: var(--accent);
+}
+.startup-elapsed {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  margin-top: 13px;
+}
+.startup-content .button {
+  margin-top: 25px;
+  min-width: 120px;
+}
+.startup-note {
+  color: var(--subtle);
+  font-size: 12px;
+  line-height: 1.75;
+  margin-top: 28px;
+}
+@media (max-height: 620px) {
+  .startup-screen {
+    padding-block: 24px;
+  }
+  .startup-brand {
+    margin-bottom: 24px;
+  }
+  .startup-status {
+    margin-top: 24px;
+  }
+}

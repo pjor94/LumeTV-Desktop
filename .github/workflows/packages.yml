@@ -46,6 +46,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+      - name: Check the embedded React bundle against its sources
+        run: python scripts/check_frontend.py
       - name: Cache the pinned SDK and native build dependencies
         uses: actions/cache@v6.1.0
         with:

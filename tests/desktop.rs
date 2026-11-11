@@ -55,6 +55,55 @@ fn desktop_authentication_preferences_and_stale_playback_are_enforced_without_pr
         .send()?
         .json()?;
     assert_eq!(initial["channels"].as_array().unwrap().len(), 126);
+    for path in ["/api/widevine", "/api/widevine/update"] {
+        let response = if path.ends_with("/update") {
+            client
+                .post(format!("{}{path}", server.origin))
+                .json(&json!({}))
+                .send()?
+        } else {
+            client.get(format!("{}{path}", server.origin)).send()?
+        };
+        assert_eq!(response.status().as_u16(), 403);
+    }
+    let component: Value = client
+        .get(format!("{}/api/widevine", server.origin))
+        .header("X-Lume-Token", token)
+        .send()?
+        .json()?;
+    assert_eq!(component["phase"], "unavailable");
+    assert!(component.get("downloaded_bytes").is_none());
+    let html = client.get(format!("{}/", server.origin)).send()?.text()?;
+    assert!(html.contains("/app.js"));
+    assert!(!html.contains("/src/main.tsx"));
+    for path in [
+        "/api/updates",
+        "/api/updates/download",
+        "/api/updates/install",
+        "/api/updates/settings",
+    ] {
+        let request = if path == "/api/updates" {
+            client.get(format!("{}{path}", server.origin))
+        } else {
+            client
+                .post(format!("{}{path}", server.origin))
+                .json(&json!({}))
+        };
+        assert_eq!(request.send()?.status().as_u16(), 403);
+    }
+    let updates: Value = client
+        .get(format!("{}/api/updates", server.origin))
+        .header("X-Lume-Token", token)
+        .send()?
+        .json()?;
+    assert_eq!(updates["phase"], "idle");
+    assert!(updates.get("destination").is_none());
+    let invalid_update = client
+        .post(format!("{}/api/updates/install", server.origin))
+        .header("X-Lume-Token", token)
+        .json(&json!({"destination":"/tmp/ignored","url":"https://untrusted.test"}))
+        .send()?;
+    assert_eq!(invalid_update.status().as_u16(), 409);
     for channel in initial["channels"].as_array().unwrap() {
         for private in ["key", "headers", "logo"] {
             assert!(channel.get(private).is_none());

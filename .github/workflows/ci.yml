@@ -38,6 +38,36 @@ jobs:
       - name: Check macOS build script syntax
         run: bash -n scripts/build_embedded_macos.sh
 
+  frontend:
+    name: React UI, embedded bundle and browser interactions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/app/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: npm run check:bundle
+      - run: npm run check:format
+      - run: npm test
+      - run: npm run build
+      - name: Require the same embedded output as the reviewed sources
+        run: git diff --exit-code -- bundle
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+
   check:
     name: Rust core and CEF API / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -77,11 +107,11 @@ jobs:
       - name: Test strict native SDK pins without downloads
         run: cargo test --locked --manifest-path vendor/download-cef/Cargo.toml --lib --target-dir target/pinned-sdk-tests
       - name: Test browser harness and desktop UI (no live services)
-        run: node --test web/player.test.cjs web/app/app.test.cjs web/app/ui.test.cjs
+        run: node --test web/player.test.cjs
 
   packages:
     name: Downloadable desktop packages
-    needs: [repository, check]
+    needs: [repository, check, frontend]
     uses: ./.github/workflows/packages.yml
     with:
       source_ref: ${{ inputs.source_ref || github.sha }}

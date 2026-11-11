@@ -19,7 +19,7 @@ class BundleTests(unittest.TestCase):
         self.sdk = self.root / "sdk"
         self.target = self.root / "target/debug"
         self.target.mkdir(parents=True)
-        for name in ("lume-cef", "lume-cef-helper"):
+        for name in ("lume-cef", "lume-cef-helper", "lume-updater"):
             (self.target / name).write_bytes(b"fixture executable")
         (self.root / "LICENSE").write_text("GPL fixture")
         (self.root / "THIRD_PARTY_NOTICES.md").write_text("Notices fixture")

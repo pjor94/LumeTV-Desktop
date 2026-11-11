@@ -28,7 +28,7 @@ class DesktopPackageTests(unittest.TestCase):
         (self.sdk / "libwidevinecdm.dll").write_bytes(b"private CDM fixture")
         self.binaries = self.root / "binaries"
         self.binaries.mkdir()
-        for name in ("lume_cef_windows.dll", "lume-player.exe", "lume-cef", "lume-player"):
+        for name in ("lume_cef_windows.dll", "lume-player.exe", "lume-cef", "lume-player", "lume-updater", "lume-updater.exe"):
             (self.binaries / name).write_bytes(("compiled-" + name).encode())
         self.notices = self.root / "notices"
         self.notices.mkdir()
@@ -54,6 +54,7 @@ class DesktopPackageTests(unittest.TestCase):
         self.assertEqual((payload / "LumeTV.dll").read_bytes(), (self.binaries / "lume_cef_windows.dll").read_bytes())
         self.assertTrue((payload / "locales/it.pak").is_file())
         self.assertTrue((payload / "licenses/LICENSE").is_file())
+        self.assertTrue((payload / "lume-updater.exe").is_file())
         self.assertFalse(any("widevine" in p.name.casefold() for p in payload.rglob("*")))
         artifacts = build.archive_package("windows-x64", payload, self.output, root=self.root)
         with zipfile.ZipFile(artifacts[0]) as archive:
@@ -63,6 +64,7 @@ class DesktopPackageTests(unittest.TestCase):
     def test_linux_launches_from_its_own_directory_with_executable_permissions(self):
         payload, executable = self.assemble("linux-x64")
         self.assertEqual(executable.name, "AppRun")
+        self.assertEqual((payload / "lume-updater").stat().st_mode & 0o777, 0o755)
         self.assertEqual(executable.stat().st_mode & 0o777, 0o755)
         self.assertIn('"$LUME_APP_DIR/lume-cef" "$@"', executable.read_text())
         self.assertIn("LD_LIBRARY_PATH", executable.read_text())

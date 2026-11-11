@@ -128,6 +128,7 @@ def codesign_bundle(app: Path, helpers: list[Path], framework: Path) -> str:
             plistlib.dump({"com.apple.security.cs.allow-jit": True}, stream)
         for helper in helpers:
             sign(helper, entitlements)
+        sign(app / "Contents/MacOS/lume-updater")
         sign(app, entitlements)
 
     verification = subprocess.run(
@@ -175,8 +176,9 @@ def build_bundle(
         raise ValueError("codec_build must be stock or custom")
     main_binary = target_dir / APP_NAME
     helper_binary = target_dir / "lume-cef-helper"
-    if not main_binary.is_file() or not helper_binary.is_file():
-        raise ValueError("Build lume-cef and lume-cef-helper before creating the bundle")
+    updater_binary = target_dir / "lume-updater"
+    if not all(path.is_file() for path in (main_binary, helper_binary, updater_binary)):
+        raise ValueError("Build lume-cef, lume-cef-helper and lume-updater before creating the bundle")
     framework_source, header = find_sdk_files(sdk)
     versions = read_versions(header)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -185,6 +187,8 @@ def build_bundle(
     try:
         executable = app_layout(stage, APP_NAME, "it.lumetv.desktop", helper=False, version=version)
         shutil.copy2(main_binary, executable)
+        shutil.copy2(updater_binary, stage / "Contents/MacOS/lume-updater")
+        (stage / "Contents/MacOS/lume-updater").chmod(0o755)
         executable.chmod(executable.stat().st_mode | 0o111)
         icon = project_root / "web/app/assets/LumeTV.icns"
         if icon.is_file():
@@ -210,6 +214,9 @@ def build_bundle(
 
         licenses = stage / "Contents/Resources/licenses"
         licenses.mkdir()
+        frontend_licenses = project_root / "web/app/licenses"
+        if frontend_licenses.is_dir():
+            shutil.copytree(frontend_licenses, licenses / "frontend")
         if additional_licenses is not None:
             shutil.copytree(additional_licenses, licenses / "dependencies")
         for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):

@@ -10,3 +10,5 @@ pub mod providers;
 pub mod report;
 pub mod runtime;
 pub mod server;
+pub mod updater;
+pub mod widevine;

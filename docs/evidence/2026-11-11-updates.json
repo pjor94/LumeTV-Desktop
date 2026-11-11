@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-11",
+  "tests": {
+    "rust": 82,
+    "javascript": 36,
+    "python": 60,
+    "browser_scenarios": 21,
+    "updater_browser_scenarios": 5
+  },
+  "macos_arm64": {
+    "detached_helper_smoke": "passed",
+    "cef_required_by_helper": false,
+    "native_ui_github_check": "passed",
+    "signed_fixture_swap": "passed",
+    "helper_handshake": true,
+    "previous_fixture_version": "0.1.0",
+    "new_fixture_version": "0.1.1",
+    "backup_retained": true,
+    "rollback_on_move_failure": "passed_unit_test",
+    "two_real_application_releases_tested": false
+  },
+  "native_update_validation_pending": ["macos-x64", "windows-x64", "linux-x64"],
+  "new_release_published": false,
+  "github_signing_secret_configured": true
+}

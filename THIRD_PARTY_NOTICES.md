@@ -32,6 +32,15 @@ Le integrazioni adattate in Rust conservano l’origine e le attribuzioni del co
 
 Il file compilato conserva i propri avvisi di copyright e licenza, compresi quelli dei componenti incorporati. Viene servito localmente dal prototipo.
 
+## React, React DOM e Scheduler
+
+L’interfaccia desktop incorpora React e React DOM **19.3.1** e Scheduler **0.28.0**,
+distribuiti sotto licenza MIT. I testi originali sono conservati in
+[web/app/licenses](web/app/licenses) e copiati nei pacchetti nativi. I sorgenti
+upstream sono nel [repository React](https://github.com/facebook/react).
+Le versioni risolte delle dipendenze e degli strumenti frontend sono registrate
+in `web/app/package-lock.json`; il codice dell’applicazione è in `web/app/src`.
+
 ## Chromium Embedded Framework e Chromium
 
 CEF è un progetto distinto, con codice sotto licenza **BSD a tre clausole** e componenti Chromium con i rispettivi avvisi. Il testo CEF presente nell’SDK attribuisce il copyright a Marshall A. Greenblatt e Google Inc.; i crediti Chromium e delle dipendenze sono nell’SDK `CREDITS.html`.

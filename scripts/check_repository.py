@@ -22,7 +22,7 @@ from urllib.parse import unquote, urlsplit
 MAX_FILE_BYTES = 5 * 1024 * 1024
 PRIVATE_DIRS = {
     ".aws", ".cache", ".git", ".ssh", ".venv", "__pycache__", "profiles",
-    "target", "WidevineCdm",
+    "target", "WidevineCdm", "release-keys",
 }
 BUILD_DIRS = {"artifacts", "build", "coverage", "dist", "releases", "reports"}
 PRIVATE_SUFFIXES = {
@@ -40,6 +40,12 @@ REQUIRED_FILES = {
     "crates/lume-cef-windows/src/lib.rs", "scripts/prepare_cef_sdk.py",
     "scripts/build_desktop.py", "scripts/release_desktop.py", "docs/RELEASE.md",
     ".github/workflows/packages.yml", ".github/workflows/release.yml",
+    "web/app/package.json", "web/app/package-lock.json", "web/app/src/main.tsx",
+    "web/app/bundle/app.js", "web/app/bundle/app.css", "web/app/bundle/index.html",
+    "web/app/bundle/manifest.json", "scripts/check_frontend.py",
+    "web/app/licenses/React-LICENSE.txt", "web/app/licenses/ReactDOM-LICENSE.txt",
+    "web/app/licenses/Scheduler-LICENSE.txt",
+    "resources/update-public-key.hex", "scripts/update_feed.py", "src/bin/lume_updater.rs", "docs/UPDATES.md",
 }
 SECRET_PATTERNS = {
     "private signing key": re.compile(
@@ -58,6 +64,7 @@ IGNORED_SAMPLES = (
     "reports/raw.json", "reports/run.log", ".env", ".env.production",
     "certs/signing.p12", "certs/signing.key", "WidevineCdm/manifest.json",
     "nested/libwidevinecdm.dylib", "dist/Lume TV.app/Contents/Info.plist",
+    "release-keys/updates-ed25519.pem",
 )
 
 

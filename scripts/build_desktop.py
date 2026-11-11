@@ -81,6 +81,9 @@ def collect_notices(sdk: Path, output: Path, *, cargo: list[str], env: dict,
     output.mkdir(parents=True)
     for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
         shutil.copy2(root / name, output / name)
+    frontend_licenses = root / "web/app/licenses"
+    if frontend_licenses.is_dir():
+        shutil.copytree(frontend_licenses, output / "frontend")
     for source, name in [
         (sdk / "LICENSE.txt", "CEF-LICENSE.txt"), (sdk / "CREDITS.html", "CEF-CREDITS.html"),
         (sdk / "include/cef_version.h", "cef_version.h"),
@@ -150,10 +153,11 @@ def assemble(platform: str, sdk: Path, binaries: Path, stage: Path, notices: Pat
             shutil.copy2(sdk / "bootstrap.exe", payload / "LumeTV.exe")
             shutil.copy2(binaries / "lume_cef_windows.dll", payload / "LumeTV.dll")
             shutil.copy2(binaries / "lume-player.exe", payload / "lume-player.exe")
+            shutil.copy2(binaries / "lume-updater.exe", payload / "lume-updater.exe")
             executable = payload / "LumeTV.exe"
             launch = "Avvia LumeTV.exe dalla cartella estratta."
         else:
-            for name in ("lume-cef", "lume-player"):
+            for name in ("lume-cef", "lume-player", "lume-updater"):
                 shutil.copy2(binaries / name, payload / name)
                 (payload / name).chmod(0o755)
             executable = payload / "AppRun"
@@ -171,7 +175,8 @@ def assemble(platform: str, sdk: Path, binaries: Path, stage: Path, notices: Pat
         (payload / "runtime.json").write_text(json.dumps(metadata, indent=2) + "\n")
         (payload / "LEGGIMI.txt").write_text(
             f"Lume TV {version} — build desktop sperimentale\n\n{launch}\n\n"
-            "Al primo utilizzo di una diretta protetta, il player può scaricare Widevine nel profilo dell’app.\n"
+            "Al primo avvio, Lume prepara Widevine nel profilo dell’app prima di aprire il catalogo.\n"
+            "Gli aggiornamenti dell’app si trovano nelle Impostazioni.\n"
             "Le prove desktop di video, audio e DRM su Windows e Linux restano da completare.\n"
             "Licenze e avvisi sono nella cartella licenses.\n", encoding="utf-8")
     if any("widevine" in path.name.casefold() for path in payload.rglob("*")):
@@ -286,7 +291,7 @@ def build(platform: str, *, toolchain="stable", output: Path | None = None,
     cargo = ["cargo", "+" + toolchain]
     common = ["build", "--locked", "--release", "--target", pin["target"]]
     if pin["os"] == "windows":
-        run(cargo + common + ["--bin", "lume-player"], env=env)
+        run(cargo + common + ["--bin", "lume-player", "--bin", "lume-updater"], env=env)
         run(cargo + common + ["-p", "lume-cef-windows"], env=env)
         run(cargo + ["clippy", "--locked", "--release", "--target", pin["target"],
                      "-p", "lume-cef-windows", "--", "-D", "warnings"], env=env)
@@ -307,6 +312,17 @@ def build(platform: str, *, toolchain="stable", output: Path | None = None,
         info = json.loads(subprocess.check_output([str(executable), "--lume-version"],
                                                  env=smoke_env, text=True, timeout=45))
         validate_runtime_info(info, pin)
+        helper_name = "lume-updater.exe" if pin["os"] == "windows" else "lume-updater"
+        helper = payload / "Contents/MacOS/lume-updater" if pin["os"] == "macos" else payload / helper_name
+        detached = stage / "detached-updater"
+        detached.mkdir()
+        shutil.copy2(helper, detached / helper_name)
+        helper_env = dict(os.environ)
+        helper_env.pop("LD_LIBRARY_PATH", None)
+        helper_version = subprocess.check_output([str(detached / helper_name), "--version"], cwd=detached,
+                                                 env=helper_env, text=True, timeout=15).strip()
+        if helper_version != "lume-updater " + app_version():
+            raise ValueError("Standalone updater smoke check failed")
         artifacts = archive_package(platform, payload, output)
     write_manifest(platform, artifacts)
     return artifacts

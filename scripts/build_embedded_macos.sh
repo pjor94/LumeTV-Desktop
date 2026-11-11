@@ -51,6 +51,7 @@ NATIVE_HOST="$(rustup run "$NATIVE_TOOLCHAIN" rustc --version --verbose)"
 xcrun --find clang >/dev/null
 
 cd -- "$PROJECT_ROOT"
+python3 "$SCRIPT_DIR/check_frontend.py"
 if [[ -z "${CARGO_HOME:-}" ]]; then
     export CARGO_HOME="$PROJECT_ROOT/.cache/cargo"
 fi

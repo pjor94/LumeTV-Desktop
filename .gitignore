@@ -5,6 +5,7 @@
 /build/
 /artifacts/
 /releases/
+/release-keys/
 
 # Browser/CDM profiles, provider sessions and raw diagnostic output.
 /profiles/
@@ -48,4 +49,7 @@ __pycache__/
 *.py[cod]
 /.venv/
 /coverage/
+node_modules/
+/web/app/test-results/
+/web/app/playwright-report/
 /.pytest_cache/

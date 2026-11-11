@@ -3,6 +3,8 @@ mod api;
 mod app;
 #[cfg(target_os = "macos")]
 mod mac;
+mod updater;
+mod widevine;
 
 use anyhow::{bail, Context, Result};
 use cef::{args::Args, *};
@@ -25,6 +27,8 @@ struct Config {
     profile: PathBuf,
     external_cdm_argument: bool,
     runtime_info: Option<PathBuf>,
+    widevine: Arc<lume_player::widevine::WidevineService>,
+    updater: Option<Arc<lume_player::updater::UpdateService>>,
 }
 
 pub(super) fn startup_trace(stage: &str) {
@@ -81,6 +85,8 @@ impl Config {
             profile,
             external_cdm_argument,
             runtime_info,
+            widevine: Arc::new(lume_player::widevine::WidevineService::default()),
+            updater: None,
         })
     }
 
@@ -220,11 +226,14 @@ pub fn run_with_main_args(main_args: Option<MainArgs>, sandbox_info: *mut u8) ->
             profile: profile.canonicalize()?,
             external_cdm_argument: false,
             runtime_info: None,
+            widevine: server.widevine_service(),
+            updater: Some(server.updater_service()),
         }
     } else {
         Config::from_args()?
     });
     config.write_runtime_info()?;
+    config.widevine.capture_startup(&config.profile);
     std::fs::create_dir_all(config.profile.join("Default"))
         .context("Could not create the embedded browser cache")?;
     let state = Arc::new(Mutex::new(app::BrowserState::default()));
@@ -260,6 +269,10 @@ pub fn run_with_main_args(main_args: Option<MainArgs>, sandbox_info: *mut u8) ->
     #[cfg(target_os = "macos")]
     mac::install_menu(&_application);
     run_message_loop();
+    config.widevine.stop();
+    if let Some(updater) = &config.updater {
+        updater.stop();
+    }
     // Explicit development diagnostics only. The snapshot is sanitized in Rust.
     if let (Some((server, _)), Some(path)) = (&desktop, std::env::var_os("LUME_PLAYBACK_REPORT")) {
         if let Ok(bytes) = serde_json::to_vec_pretty(&server.playback_snapshot()) {

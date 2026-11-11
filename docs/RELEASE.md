@@ -2,7 +2,7 @@
 
 Le pipeline compilano l’app completa con CEF incorporato su quattro runner
 nativi. I pacchetti servono per le prove desktop e non includono Widevine:
-l’app può scaricarlo al primo utilizzo di una diretta protetta.
+l’app lo prepara al primo avvio, prima del catalogo.
 
 | Build | Runner | Download |
 | --- | --- | --- |
@@ -49,6 +49,10 @@ Solo dopo il successo di questi controlli richiama
    e presenza del runtime incorporato con sandbox abilitata.
 7. Produce archivi, metadati e checksum SHA-256 scaricabili.
 
+Ogni pacchetto contiene anche `lume-updater`. Prima di archiviare, la pipeline
+lo copia fuori dalla cartella CEF ed esegue `--version`, così verifica che possa
+funzionare durante la sostituzione dell’app.
+
 Questo controllo si ferma al caricamento del programma. Renderer, immagine,
 audio, richieste di licenza DRM e comportamento dei provider richiedono la
 [validazione live](VALIDATION.md).
@@ -80,23 +84,31 @@ compatibili con Ubuntu 24.04, glibc 2.39+ e user namespace non privilegiati
 disponibili. Non disabilita la sandbox e non cambia impostazioni di sistema.
 
 Widevine viene preparato dal Component Updater nel profilo, quando disponibile
-per il runtime e l’emittente; non è incluso negli allegati. Il primo utilizzo
-di una diretta protetta richiede una connessione.
+per il runtime e l’emittente; non è incluso negli allegati. La preparazione
+iniziale richiede una connessione e avviene prima dell’apertura del catalogo.
 
 ## Pubblicare una versione
 
 [release.yml](../.github/workflows/release.yml) riprende il flusso della versione
-Android: ogni pre-release sperimentale contiene pacchetti, sorgenti e checksum.
+Android: ogni release contiene pacchetti, sorgenti e checksum.
+Il job finale richiede la secret `LUME_UPDATE_SIGNING_KEY` e pubblica anche
+`update.json` e `update.sig`. Configurazione e comportamento dell’updater sono
+descritti in [Aggiornamenti dell’app](UPDATES.md).
 
-1. Aggiorna alla stessa versione `Cargo.toml` e
-   `crates/lume-cef-windows/Cargo.toml`, il lockfile e il changelog.
+I tag ordinari, come `v0.2.0`, creano release normali marcate **Latest**.
+Un suffisso, per esempio `v0.2.1-beta.1` o `v0.2.1-rc.1`, crea una pre-release
+senza cambiare Latest. Il canale nel feed firmato deve corrispondere.
+
+1. Aggiorna alla stessa versione `Cargo.toml`,
+   `crates/lume-cef-windows/Cargo.toml`, `web/app/package.json` e i rispettivi
+   lockfile. Aggiungi una sezione con le modifiche nel changelog e ricompila la UI.
 2. Crea e invia il tag `vVERSIONE` sul commit da distribuire, per esempio
-   `v0.1.0` se entrambi i manifest dichiarano `0.1.0`.
+   `v0.2.0` se i manifest dichiarano `0.2.0`.
 3. Attendi i test, le quattro build native e l’archivio dei sorgenti.
 4. La pipeline verifica che ogni allegato abbia versione e commit del tag,
    hash SDK previsti, sandbox attiva, esito del caricamento e checksum corretti.
 5. Il job finale pubblica insieme tutti i pacchetti e `SHA256SUMS.txt` nella
-   pre-release. Il token con `contents: write` è disponibile solo in questo job.
+   release. Il token con `contents: write` è disponibile solo in questo job.
 
 È disponibile anche l’avvio manuale indicando un **tag già esistente**.
 Un tag non coerente con Cargo o un solo target fallito impediscono la
@@ -104,8 +116,34 @@ pubblicazione della release completa. Una release esistente non viene
 sovrascritta automaticamente.
 
 I metadati `.build.json` contengono versione, commit, versione CEF reale,
-hash SDK, dimensioni e hash degli archivi. Servono a identificare la build;
-feed degli aggiornamenti in-app e firme di distribuzione restano da definire.
+hash SDK, dimensioni e hash degli archivi. Il job finale verifica questi dati
+prima di firmare il feed. Developer ID, notarizzazione e Authenticode restano
+separati dalla firma Ed25519 dell’updater.
+
+## Preparare in locale
+
+Dopo i controlli, la revisione dei file e il commit locale:
+
+```sh
+python3 scripts/release_desktop.py prepare --tag v0.2.0 --directory .cache/release-0.2.0
+```
+
+Il comando controlla versioni, changelog, contenuto pubblico e bundle React.
+Richiede sorgenti committati e una copia di lavoro pulita. Scrive le note
+complete e `release-plan.json` nella cartella indicata, senza creare tag,
+caricare pacchetti o avviare workflow. Queste note sono le stesse che il job
+di pubblicazione userà dopo la verifica degli allegati.
+
+Per produrre un pacchetto nativo sul sistema corrispondente, usa
+`scripts/build_desktop.py`; per esempio, su Mac Apple Silicon:
+
+```sh
+python3 scripts/build_desktop.py --platform macos-arm64 --toolchain stable-aarch64-apple-darwin --output dist/0.2.0
+```
+
+La release completa richiede comunque tutti e quattro i target e i sorgenti
+dello stesso commit. Il caricamento dei pacchetti avviene soltanto dopo
+l’invio del tag e il successo della pipeline di rilascio.
 
 ## Sorgenti e dipendenze
 
@@ -158,5 +196,6 @@ Docker locale non era disponibile per la verifica Linux.
 
 L’esito delle build remote è visibile in
 [GitHub Actions](https://github.com/pjor94/LumeTV-Desktop/actions).
-L’autoaggiornamento dell’app resta da implementare; lo stato delle prove video
+Le nuove build includono l’[updater](UPDATES.md); la prima release che lo
+contiene richiede un’installazione manuale. Lo stato delle prove native, video
 e DRM è riportato in [STATUS.md](STATUS.md).

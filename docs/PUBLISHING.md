@@ -1,9 +1,9 @@
 # Pubblicazione su GitHub
 
 Il repository pubblico è [pjor94/LumeTV-Desktop](https://github.com/pjor94/LumeTV-Desktop),
-con branch principale `main`. La prima versione Cargo è `0.1.0`, destinata alle
-prove desktop. La CI esegue i controlli a ogni push o pull request e, se riescono,
-produce i pacchetti scaricabili. Il flusso di tag e pre-release è in
+con branch principale `main`. I sorgenti preparano la versione `0.2.0`.
+La CI esegue i controlli a ogni push o pull request e, se riescono,
+produce i pacchetti scaricabili. Il flusso di tag e release è in
 [RELEASE.md](RELEASE.md).
 
 ## Contenuto pubblico
@@ -60,13 +60,18 @@ repository.
 
 Queste impostazioni vanno applicate su GitHub dopo aver creato il remoto.
 
-## Pacchetti e pre-release
+## Pacchetti e release
 
 Le pipeline preparano DMG/ZIP Mac arm64 e Intel, ZIP Windows x64 e
 DEB/tar.gz Linux x64, insieme ai sorgenti Cargo corrispondenti, avvisi e
-checksum. Il workflow di release pubblica una pre-release solo dopo il
+checksum. Il workflow pubblica la release solo dopo il
 successo di tutte le build e il controllo di versione/commit degli allegati.
 Vedi [la guida di rilascio](RELEASE.md).
+
+Un tag ordinario, come `v0.2.0`, pubblica una release normale marcata **Latest**.
+I suffissi di anteprima, come `v0.2.1-beta.1` e `v0.2.1-rc.1`, producono
+pre-release e non cambiano la versione Latest. Il feed firmato usa lo stesso
+canale della release GitHub.
 
 Gli esiti delle build native sono raccolti in [Stato del progetto](STATUS.md).
 Le firme restano di sviluppo.
@@ -76,7 +81,8 @@ revisione degli avvisi e dei componenti esterni, prove native di installazione
 e riproduzione. La GPL copre il codice del progetto; runtime, codec, CDM e
 contenuti hanno condizioni proprie: vedi [attribuzioni](../THIRD_PARTY_NOTICES.md).
 
-L’aggiornamento automatico dell’app è ancora da implementare. Dopo la scelta
-del canale di rilascio occorrerà definire feed delle versioni, verifica dei
-pacchetti firmati, installazione, riavvio e recupero dopo un errore. Catalogo,
-guida e componenti CEF hanno aggiornamenti separati dall’eseguibile di Lume TV.
+Le nuove build includono il controllo degli aggiornamenti e il download di
+pacchetti verificati. Il job di pubblicazione richiede una chiave Ed25519 per
+firmare il feed: configurazione, installazione e verifiche ancora da completare
+sono descritte in [Aggiornamenti dell’app](UPDATES.md). Catalogo, guida e
+componenti CEF si aggiornano separatamente dal programma.

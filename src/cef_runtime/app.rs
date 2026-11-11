@@ -12,7 +12,6 @@ pub(super) struct BrowserState {
     window: Option<Window>,
 }
 
-#[cfg(target_os = "macos")]
 pub(super) fn close_browser(state: &Arc<Mutex<BrowserState>>) {
     let window = state.lock().ok().and_then(|state| state.window.clone());
     if let Some(window) = window {
@@ -68,6 +67,8 @@ wrap_browser_process_handler! {
     impl BrowserProcessHandler {
         fn on_context_initialized(&self) {
             super::startup_trace("context_initialized");
+            super::widevine::start(self.config.widevine.clone());
+            if let Some(service) = &self.config.updater { super::updater::start(service.clone(), self.state.clone()); }
             let mut client = LumeClient::new(self.config.clone(), self.state.clone());
             let mut view_delegate = LumeBrowserViewDelegate::new();
             let settings = BrowserSettings::default();

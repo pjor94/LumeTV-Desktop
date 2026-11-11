@@ -8,7 +8,7 @@
 <h1 align="center">La TV, fatta semplice.</h1>
 <p align="center">Le dirette italiane sul tuo computer, con un’interfaccia essenziale e il player integrato.</p>
 <p align="center">
-  <a href="https://github.com/pjor94/LumeTV-Desktop/releases">Versioni di prova</a> ·
+  <a href="https://github.com/pjor94/LumeTV-Desktop/releases/latest">Scarica Lume TV</a> ·
   <a href="#compilazione">Compila dai sorgenti</a> ·
   <a href="docs/RELEASE.md">Pacchetti e release</a> ·
   <a href="docs/STATUS.md">Stato del progetto</a> ·
@@ -18,9 +18,7 @@
 </p>
 
 > [!NOTE]
-> ### Versione desktop in sviluppo
->
-> È una versione di prova. Le metriche di riproduzione disponibili riguardano
+> Lume TV Desktop è in sviluppo. Le prove di riproduzione disponibili riguardano
 > **macOS Apple Silicon**; il collaudo video su Mac Intel, Windows e Linux resta aperto.
 >
 > [Compila e avvia l’app](#compilazione) · [Verifiche e limiti attuali](docs/STATUS.md)
@@ -32,9 +30,18 @@ Lume TV Desktop porta sul computer il catalogo di
 apri la diretta a tutto schermo oppure continua a sfogliare con il mini-player.
 Guida, ricerca e preferiti aiutano a ritrovare ciò che vuoi guardare.
 
-L’app è scritta in Rust. La riproduzione usa CEF incorporato
-e Shaka Player, con un’interfaccia locale HTML/CSS/JavaScript. Non serve avere
-Chrome installato.
+Il backend è scritto in Rust, l’interfaccia in React e TypeScript. Il player usa
+CEF incorporato e Shaka Player: puoi avviare Lume senza installare Chrome.
+
+## Novità della 0.2.0
+
+L’interfaccia passa a React mantenendo lo stile di Lume. Il player resta attivo
+quando cambi pagina o passi al mini-player, senza riaprire la diretta.
+
+Al primo avvio una schermata prepara Widevine prima di mostrare il catalogo.
+Da **Impostazioni → Aggiornamenti dell’app** puoi controllare le nuove versioni,
+scaricarle con una percentuale di avanzamento e scegliere quando installarle.
+Le [note di versione](CHANGELOG.md) raccolgono tutte le modifiche.
 
 ## Grazie a WorldLiveTV
 
@@ -70,6 +77,10 @@ file adattati e altre attribuzioni sono raccolti in
   che rispettano la preferenza per il movimento ridotto.
 - Catalogo e guida aggiornati automaticamente, con cache locale conservata
   quando la sorgente non risponde.
+- Preparazione iniziale di Widevine con stato dell’operazione e riprova in caso
+  di errore.
+- Aggiornamenti dell’app dalle release GitHub, con download annullabile e
+  verifica dei pacchetti prima dell’installazione.
 
 La disponibilità dipende dalle emittenti, dalla rete e dalle modifiche ai servizi
 sorgente. Le prove di riproduzione coprono una parte dei canali del catalogo.
@@ -104,13 +115,22 @@ senza riaprire il flusso.
 
 ## Distribuzione e installazione
 
-Le pipeline preparano pacchetti dell’app completa: DMG e ZIP per
-Mac Apple Silicon e Intel, ZIP portabile per Windows x64, DEB e tar.gz per Linux
-x64. Le build riuscite sono disponibili negli **Artifacts** di
-[GitHub Actions](https://github.com/pjor94/LumeTV-Desktop/actions).
-I tag di versione avviano la pubblicazione di
-[pre-release](https://github.com/pjor94/LumeTV-Desktop/releases) con sorgenti e checksum.
-Vedi [pacchetti e release](docs/RELEASE.md) per download e installazione.
+Scarica il pacchetto del tuo sistema da
+[Release](https://github.com/pjor94/LumeTV-Desktop/releases/latest).
+Ogni versione contiene l’app completa, il runtime CEF, i sorgenti corrispondenti
+e i checksum. Le build dei singoli commit restano disponibili negli **Artifacts**
+di [GitHub Actions](https://github.com/pjor94/LumeTV-Desktop/actions).
+
+| Sistema | Pacchetto | Installazione |
+| --- | --- | --- |
+| macOS Apple Silicon | DMG o ZIP `macos-arm64` | Copia `Lume TV.app` in Applicazioni |
+| macOS Intel | DMG o ZIP `macos-x64` | Copia `Lume TV.app` in Applicazioni |
+| Windows x64 | ZIP `windows-x64` | Estrai tutta la cartella e avvia `LumeTV.exe` |
+| Linux x64 / Ubuntu 24.04 | DEB o tar.gz `linux-x64` | Installa il DEB con il gestore pacchetti, oppure estrai il tar.gz e avvia `AppRun` |
+
+I tag ordinari, come `v0.2.0`, producono una release normale. I tag con suffisso
+`beta` o `rc` producono un’anteprima. Le istruzioni complete sono in
+[pacchetti e release](docs/RELEASE.md).
 
 I pacchetti sono ancora di sviluppo: macOS usa una firma ad hoc senza
 notarizzazione e Windows non ha una firma Authenticode. La build dai sorgenti
@@ -136,8 +156,9 @@ verificato a parte. Risultati, versioni e limiti sono in [Stato del progetto](do
 ### Primo avvio e Widevine
 
 Widevine non è incluso nei sorgenti né nel bundle. CEF può scaricarlo nel
-profilo dell’app attraverso il proprio Component Updater: al primo avvio di una
-diretta protetta serve Internet e la preparazione può richiedere alcuni minuti.
+profilo dell’app attraverso il proprio Component Updater. Al primo avvio una
+schermata dedicata completa la preparazione prima di aprire il catalogo:
+serve Internet e l’operazione può richiedere alcuni minuti.
 Questo percorso è stato verificato su macOS, senza copia da Chrome.
 
 Versioni, provenienza e aspetti ancora aperti per la distribuzione binaria sono
@@ -146,9 +167,20 @@ e nelle [attribuzioni](THIRD_PARTY_NOTICES.md).
 
 ### Aggiornamenti dell’app
 
-L’autoaggiornamento dell’applicazione non è ancora implementato. Per aggiornare,
-scarica il nuovo pacchetto e sostituisci l’app, oppure ricompila dai sorgenti.
-Catalogo, guida TV e Widevine si aggiornano separatamente.
+Le nuove build controllano le release in background. In **Impostazioni →
+Aggiornamenti dell’app** puoi scaricare il pacchetto con avanzamento, annullare
+il download e scegliere quando installarlo. Firma Ed25519 e SHA-256 vengono
+verificati prima dell’installazione. Preferiti e impostazioni restano salvati.
+
+Su macOS e nelle cartelle portabili scrivibili, **Installa e riavvia** sostituisce
+l’intero pacchetto e conserva una copia precedente. Il DEB di Linux apre il
+gestore pacchetti; se la cartella dell’app non è scrivibile viene aperto il
+pacchetto per l’installazione manuale. Per impostazione iniziale Lume propone
+le release ordinarie. Puoi includere le anteprime attivando **Versioni di prova**.
+
+La release 0.1.0 già pubblicata non ha questo controllo: occorre installare
+manualmente la prima build che lo include. Catalogo, guida TV e Widevine si
+aggiornano separatamente. Dettagli in [Aggiornamenti](docs/UPDATES.md).
 
 ## Tastiera
 
@@ -214,7 +246,21 @@ Per una sessione di sviluppo con profilo separato:
 ```
 
 `app --serve-only --profile profiles/ui-test` avvia soltanto l’anteprima HTTP locale.
-I test JavaScript richiedono Node 22+; quelli degli strumenti usano Python 3.12+.
+L’interfaccia usa React e TypeScript, con gli stili originali di Lume. Per
+modificarla servono Node 22.12+ e Python 3.12+. Il bundle compilato è conservato
+nel repository: la compilazione Rust può usarlo anche senza Node.
+La [guida al frontend](docs/FRONTEND.md) descrive componenti, player e build.
+
+```sh
+cd web/app
+npm ci
+npm run build
+npm test
+npx playwright install chromium
+npm run test:browser
+```
+
+I test degli strumenti usano Python 3.12+.
 Non sono dipendenze runtime dell’app.
 
 ```sh
@@ -222,14 +268,16 @@ python3 scripts/check_repository.py
 cargo fmt --all -- --check
 cargo test --locked --all-targets
 cargo clippy --locked --all-targets -- -D warnings
-node --test web/player.test.cjs web/app/app.test.cjs web/app/ui.test.cjs
+node --test web/player.test.cjs
+python3 scripts/check_frontend.py
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-La CI verifica core Rust e API CEF sui tre sistemi, tutti i test Node e gli
-strumenti Python con fixture su Linux, poi costruisce i pacchetti su quattro
-runner nativi. Usa Node 24 e Python 3.13; non contatta le emittenti e non verifica
-la riproduzione live. Le prove DOM animate si eseguono separatamente nel browser.
+La CI verifica core Rust e API CEF sui tre sistemi, ricompila la UI e confronta
+il risultato con gli asset incorporati. Esegue anche i test React nel browser
+e quelli Python con fixture, poi costruisce i pacchetti su quattro runner nativi.
+Usa Node 24 e Python 3.13; i test con fixture non contattano le emittenti e non
+verificano la riproduzione live.
 
 </details>
 
@@ -237,8 +285,9 @@ la riproduzione live. Le prove DOM animate si eseguono separatamente nel browser
 
 Lume TV non richiede un account. Preferiti, cronologia, guida e impostazioni
 restano sul dispositivo; le sessioni dei provider sono gestite dal backend Rust.
-L’app contatta i servizi di WLTV, EPG-Guide, delle emittenti e il servizio di
-aggiornamento dei componenti CEF per preparare Widevine.
+L’app contatta i servizi di WLTV, EPG-Guide e delle emittenti, il servizio di
+aggiornamento CEF per preparare Widevine e GitHub per controllare e scaricare
+le nuove versioni del programma.
 
 Preferenze e cache sono in `~/Library/Application Support/LumeTV` su macOS,
 `%APPDATA%/LumeTV` su Windows e `$XDG_DATA_HOME/LumeTV` oppure
