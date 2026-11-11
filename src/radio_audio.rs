@@ -409,7 +409,9 @@ impl Id3Probe {
                             bytes = &bytes[2..];
                         }
                         let words: Vec<u16> = bytes
-                            .chunks_exact(2)
+                            .as_chunks::<2>()
+                            .0
+                            .iter()
                             .map(|b| {
                                 if little {
                                     u16::from_le_bytes([b[0], b[1]])
