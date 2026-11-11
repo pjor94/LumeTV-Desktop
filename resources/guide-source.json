@@ -1,0 +1,17 @@
+{
+  "source": "https://api.epg-guide.com/get/wltv.xz",
+  "acquisition": "Download manuale del feed XMLTV/XZ.",
+  "received_at": "2026-11-11T16:02:21.752000+00:00",
+  "provider_creation": "EPG Created on 11/11/2026 08:30:02 with [EPGMaker] v.1.143.9761 Copyright by CrAcK75",
+  "source_sha256": "16c3a5a9f1134b125445426ef0baee91d6f9c3fa7372938e57264432098255a7",
+  "source_bytes": 829484,
+  "snapshot_sha256": "f2aaa31c322443f29d0cb7219035b76d25208d208f43da633215811fcaf35312",
+  "snapshot_bytes": 1208909,
+  "catalog_signature": "2d245f9a984e51fec69303e109538989d492915204dbaee9f5b0d821bc66f271",
+  "channels": 83,
+  "programmes": 4075,
+  "logos": 83,
+  "earliest_start": "2026-11-11T05:00:00+00:00",
+  "latest_end": "2026-11-14T00:00:00+00:00",
+  "purpose": "Copia iniziale della guida TV per il desktop; il caricamento automatico dal bundle resta da integrare."
+}

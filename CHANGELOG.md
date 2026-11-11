@@ -2,6 +2,8 @@
 
 ## 0.2.0
 
+- macOS: avvio della UI in memoria senza la richiesta “Chromium Safe Storage”,
+  disabilitando l’inizializzazione preventiva del provider Portachiavi di Chromium.
 - Sezione Radio con 1.310 stazioni italiane di WorldRadio, ricerca per nome e città,
   preferite, recenti e catalogo aggiornato ogni giorno con copia locale.
 - Riproduzione radio MP3/AAC/HLS nel player integrato, mini-player e titolo del

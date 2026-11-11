@@ -1,0 +1,96 @@
+{
+  "date": "2026-11-11",
+  "scope": "macOS keychain startup correction; measurements taken before the release commit",
+  "base_commit": "e92af95552a5bd8c50d7ec4959483e95040b9428",
+  "native_platform": "macos-arm64",
+  "cef_version": "150.0.19+gcf60f42+chromium-150.0.7871.252",
+  "widevine_version": "4.10.3112.0",
+  "policy": {
+    "disabled_feature": "UseKeychainKeyProvider",
+    "browser_context": "memory_only",
+    "browser_cookie_store": false,
+    "mock_keychain": false,
+    "system_keychain_settings_modified": false
+  },
+  "startup_checks": {
+    "empty_browser_profile": true,
+    "widevine_downloaded_by_cef": true,
+    "existing_profile_reopened": true,
+    "keychain_prompt_observed": false,
+    "shutdown_timeout_observed_in_first_run": false
+  },
+  "native_playback": [
+    {
+      "channel_id": "rai1",
+      "assessment": {
+        "status": "verified",
+        "progress_seconds": 37.939,
+        "elapsed_server_seconds": 38.0,
+        "required_seconds": 35,
+        "decoded_video_frames_delta": 950,
+        "audio_decoded_bytes": 1550791,
+        "audio_audibility": "not_verified",
+        "drm_required": false,
+        "drm_verified": false,
+        "encrypted_event_observed": false,
+        "license_http_success": false,
+        "usable_key_observed": false
+      },
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "channel_id": "canale5",
+      "assessment": {
+        "status": "verified",
+        "progress_seconds": 37.926,
+        "elapsed_server_seconds": 38.0,
+        "required_seconds": 35,
+        "decoded_video_frames_delta": 1899,
+        "audio_decoded_bytes": 465006,
+        "audio_audibility": "not_verified",
+        "drm_required": true,
+        "drm_verified": true,
+        "encrypted_event_observed": true,
+        "license_http_success": true,
+        "usable_key_observed": true
+      },
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "channel_id": "la7",
+      "assessment": {
+        "status": "verified",
+        "progress_seconds": 36.947,
+        "elapsed_server_seconds": 36.995,
+        "required_seconds": 35,
+        "decoded_video_frames_delta": 925,
+        "audio_decoded_bytes": 460699,
+        "audio_audibility": "not_verified",
+        "drm_required": true,
+        "drm_verified": true,
+        "encrypted_event_observed": true,
+        "license_http_success": true,
+        "usable_key_observed": true
+      },
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "tests": {
+    "rust_library": 81,
+    "native_cef_binary": 4,
+    "native_clippy": "passed"
+  },
+  "matrix_report_sha256": "e9e13cf2a33e5b09ae4091b8297d56af5b6ccb8e1899461a88fcf507f8536895",
+  "implementation_sha256": {
+    "src/cef_runtime/app.rs": "a5f8271c1df59824359c454b96895ee064c41d70c1c1580b920fa5a86ecedb60",
+    "src/cef_runtime/mod.rs": "bda5f76d065e56bc415d12dbd13a13c5187c9925e4dc4238f6b0654c98891e4c"
+  },
+  "limitations": [
+    "Audio was muted; acoustic audibility was not verified.",
+    "Protected video cannot be confirmed from macOS screenshots in this setup.",
+    "Windows and Linux behavior is unchanged; native tests in this run used macOS arm64."
+  ]
+}

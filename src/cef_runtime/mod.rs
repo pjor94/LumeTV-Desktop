@@ -151,6 +151,22 @@ fn strip_private_switches(command_line: &CommandLine) {
     }
 }
 
+#[cfg(target_os = "macos")]
+fn macos_disabled_features(current: &str) -> String {
+    let mut features: Vec<_> = current
+        .split(',')
+        .map(str::trim)
+        .filter(|feature| !feature.is_empty())
+        .collect();
+    if !features
+        .iter()
+        .any(|feature| feature.split(['<', ':']).next() == Some("UseKeychainKeyProvider"))
+    {
+        features.push("UseKeychainKeyProvider");
+    }
+    features.join(",")
+}
+
 pub fn run() -> Result<i32> {
     run_with_main_args(None, std::ptr::null_mut())
 }
@@ -249,9 +265,9 @@ pub fn run_with_main_args(main_args: Option<MainArgs>, sandbox_info: *mut u8) ->
         // settings persist in Rust; component downloads use root_cache_path.
         cache_path: CefString::default(),
         // The embedded document is our authenticated local UI. Provider HTTP
-        // sessions live in Rust and never require browser cookies. Keeping the
-        // cookie store disabled also avoids consulting another Chromium app's
-        // Safe Storage keychain item in this CEF 150 build on macOS.
+        // sessions live in Rust and never require browser cookies. This does
+        // not stop Chromium's eager OSCrypt initialization; the macOS feature
+        // policy in LumeApp handles that separately.
         cookieable_schemes_exclude_defaults: 1,
         log_severity: LogSeverity::DISABLE,
         ..Default::default()
@@ -325,5 +341,26 @@ mod tests {
         assert!(loopback_origin("http://example.com:3000/").is_err());
         assert!(loopback_origin("http://user:secret@127.0.0.1:3000/").is_err());
         assert!(loopback_origin("http://127.0.0.1/").is_err());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn ephemeral_macos_ui_skips_eager_keychain_provider_and_preserves_other_features() {
+        assert_eq!(macos_disabled_features(""), "UseKeychainKeyProvider");
+        assert_eq!(
+            macos_disabled_features("FeatureA, FeatureB<Study:param/value,"),
+            "FeatureA,FeatureB<Study:param/value,UseKeychainKeyProvider"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_keychain_policy_is_idempotent_with_trial_annotations() {
+        for features in [
+            "UseKeychainKeyProvider",
+            "FeatureA,UseKeychainKeyProvider<Trial",
+        ] {
+            assert_eq!(macos_disabled_features(features), features);
+        }
     }
 }

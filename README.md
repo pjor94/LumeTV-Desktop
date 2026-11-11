@@ -43,6 +43,7 @@ per nome o città, preferite e recenti. Puoi continuare l’ascolto nel mini-pla
 il titolo del brano compare quando viene comunicato dall’emittente.
 
 Al primo avvio una schermata prepara Widevine prima di mostrare il catalogo.
+Su macOS l’avvio evita la richiesta di accesso a “Chromium Safe Storage”.
 Da **Impostazioni → Aggiornamenti dell’app** puoi controllare le nuove versioni,
 scaricarle con una percentuale di avanzamento e scegliere quando installarle.
 Le [note di versione](CHANGELOG.md) raccolgono tutte le modifiche.

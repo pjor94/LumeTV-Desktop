@@ -14,7 +14,28 @@ L’8 novembre 2026, con la nuova UI su macOS arm64, Rai 1, Canale 5 e La7 hanno
 
 Una prova separata è partita da `profiles/desktop-first-run-bundled`, senza sottocartella browser né CDM. CEF ha scaricato Widevine **4.10.3112.0** e Canale 5 ha riprodotto oltre due minuti, senza riavvio del browser o script di copia. La valutazione Rust registra `drm_verified: true`. Erano già presenti guida e loghi da una cache del feed reale; il profilo era privo di componenti DRM precaricati. Stato iniziale (`reports/desktop-first-run-bundled-before.json`), risultato (`reports/desktop-first-run-bundled-summary.json`), metriche (`reports/desktop-first-run-bundled-canale5.json`). Le precedenti prove inconcludenti di caricamento della pagina sono documentate più avanti e conservano i propri esiti.
 
-Durante la chiusura, CEF 150 può lasciare in sospeso una richiesta OSCrypt al Portachiavi. Una volta chiuse tutte le finestre e il server Rust, l’app termina entro cinque secondi, senza usare un Portachiavi simulato o modificare protezioni e credenziali di sistema. Per il rilascio occorre risolvere questo limite e completare le verifiche su firma, notarizzazione, licenze, codec e VMP descritte sotto. La prova riguarda macOS; Windows e Linux non sono stati eseguiti in questa sessione.
+Su macOS la UI in memoria disabilita la feature Chromium `UseKeychainKeyProvider`.
+In Chromium 150 questo provider viene avviato preventivamente anche quando non
+ci sono cookie da salvare, provocando la richiesta di accesso a “Chromium Safe
+Storage”. La disattivazione riguarda il processo CEF di Lume; le altre feature
+eventualmente disabilitate sulla riga di comando vengono conservate.
+Il contesto resta in memoria, con cookie disabilitati e preferenze gestite da Rust.
+L’introduzione di login, password o cookie persistenti richiederà una revisione
+di questa scelta e una configurazione dell’archivio cifrato dedicata a Lume.
+
+La verifica dell’11 novembre ha completato il primo avvio con un profilo browser
+vuoto e il download Widevine 4.10.3112.0 senza mostrare richieste del Portachiavi.
+Rai 1, Canale 5 e La7 hanno superato 35 secondi misurati; per i due canali protetti
+sono stati osservati eventi cifrati, licenze riuscite e chiavi `usable`.
+La prova usa il runtime macOS arm64. Misure e limiti sono in [STATUS.md](STATUS.md).
+La chiusura conserva il limite di cinque secondi come protezione dal blocco di
+teardown del runtime. Firma, notarizzazione, licenze, codec e VMP restano distinti
+dalla gestione del Portachiavi.
+
+Il punto di inizializzazione è descritto nei
+[sorgenti Chromium 150](https://github.com/chromium/chromium/blob/150.0.7871.252/chrome/browser/browser_process_impl.cc);
+la feature è definita in
+[`chrome_features.cc`](https://github.com/chromium/chromium/blob/150.0.7871.252/chrome/common/chrome_features.cc).
 
 ## Architettura e stato
 

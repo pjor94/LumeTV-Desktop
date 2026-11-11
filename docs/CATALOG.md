@@ -6,6 +6,13 @@ L’11 novembre è stata aggiunta una sezione separata con **1.310 radio italian
 Il conteggio TV e le associazioni EPG restano riferiti ai 126 canali.
 Fonte, importazione e cache delle radio sono descritti in [RADIO.md](RADIO.md).
 
+La copia della guida in [`resources/guide.json`](../resources/guide.json) è stata
+importata l’11 novembre 2026 dal feed XMLTV/XZ. Contiene
+4.075 programmi e 83 canali con loghi; date, origine e checksum sono in
+[`guide-source.json`](../resources/guide-source.json). È disponibile per la futura
+inclusione come guida iniziale: il caricamento automatico dal bundle resta da
+integrare.
+
 | Integrazione | Canali | Manifest validi nell’audit |
 | --- | ---: | ---: |
 | Rai | 21 | 14 |

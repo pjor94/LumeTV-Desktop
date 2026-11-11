@@ -38,6 +38,21 @@ wrap_app! {
             super::startup_trace("command_line");
             if let Some(command_line) = command_line {
                 strip_private_switches(command_line);
+                #[cfg(target_os = "macos")]
+                {
+                    // Chromium 150 eagerly requests the shared Safe Storage key.
+                    // Lume's browser context is memory-only, with cookies off;
+                    // provider credentials and preferences belong to Rust.
+                    // Revisit this policy before adding persistent browser data.
+                    let disabled = CefString::from(
+                        &command_line.switch_value(Some(&CefString::from("disable-features"))),
+                    ).to_string();
+                    command_line.append_switch_with_value(
+                        Some(&CefString::from("disable-features")),
+                        Some(&CefString::from(super::macos_disabled_features(&disabled).as_str())),
+                    );
+                    super::startup_trace("macos_eager_keychain_provider_disabled");
+                }
                 command_line.append_switch_with_value(
                     Some(&CefString::from("log-severity")),
                     Some(&CefString::from("disable")),

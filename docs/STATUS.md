@@ -4,6 +4,35 @@ Ultimo aggiornamento dei sorgenti: **11 novembre 2026**. Le nuove prove della UI
 React sono descritte qui sotto; le sezioni successive conservano i risultati
 dell’8 e 10 novembre. La disponibilità delle emittenti può cambiare.
 
+## Portachiavi macOS dell’11 novembre
+
+La build locale disabilita `UseKeychainKeyProvider` per il contesto browser in
+memoria di Lume. Questa feature di Chromium 150 avvia preventivamente OSCrypt
+e può provocare la richiesta “Chromium Safe Storage” anche con i cookie disabilitati.
+La modifica è limitata a macOS e conserva le altre feature della riga di comando.
+Preferenze e sessioni dei provider continuano a essere gestite da Rust.
+
+Il primo avvio, da una cartella browser assente, ha completato il download
+Widevine 4.10.3112.0 e aperto il catalogo senza richieste del Portachiavi.
+Anche un profilo usato prima della modifica si è riaperto senza richieste.
+La chiusura del primo avvio non ha attivato il limite di teardown di cinque secondi.
+
+La matrice nativa con la nuova build macOS arm64 ha misurato:
+
+| Canale | Avanzamento misurato | DRM |
+| --- | --- | --- |
+| Rai 1 | 37,939 s | Non richiesto |
+| Canale 5 | 37,926 s | Verificato: evento cifrato, licenza riuscita e chiave utilizzabile |
+| La7 | 36,947 s | Verificato: evento cifrato, licenza riuscita e chiave utilizzabile |
+
+Tutti i canali hanno mostrato avanzamento dei frame e decodifica audio.
+L’audio era disattivato; l’udibilità e le immagini protette sul monitor restano
+da confermare separatamente. Sono passati 81 test della libreria Rust, quattro
+test del binario CEF, formattazione e Clippy del runtime nativo.
+Il [riepilogo pubblico](evidence/2026-11-11-keychain.json) conserva le metriche
+selezionate e gli hash dei sorgenti modificati, senza dati delle licenze o URL dei flussi.
+La correzione è inclusa nella versione 0.2.0.
+
 ## Radio dell’11 novembre
 
 La sezione Radio include 1.310 stazioni italiane di WorldRadio, ricerca per nome
@@ -42,7 +71,7 @@ indirizzi dei flussi, token e dati del profilo. Dettagli in [RADIO.md](RADIO.md)
 Le prove native Windows, Linux e Mac Intel restano da eseguire. Le pipeline
 mantengono i quattro target esistenti; le misure qui sopra riguardano solo macOS arm64.
 
-## Preparazione della 0.2.0
+## Distribuzione della 0.2.0
 
 Versioni Rust, DLL Windows, frontend e lockfile sono allineati a `0.2.0`.
 I tag ordinari pubblicano release normali marcate Latest; i tag beta/rc
@@ -55,9 +84,9 @@ I nuovi test controllano la classificazione della release, la corrispondenza
 con il feed firmato, le versioni nei manifest e le note del changelog.
 Formattazione, Clippy, bundle React e controlli dei file pubblici sono passati.
 
-La release GitHub 0.1.0 è stata riclassificata come normale e Latest, mantenendo
-i suoi 19 allegati e le note. La 0.2.0 è preparata in locale: la pubblicazione
-richiede ancora l’invio del commit e del tag e il successo delle quattro build.
+La release GitHub 0.1.0 è stata riclassificata come normale, mantenendo
+i suoi 19 allegati e le note. La pubblicazione della 0.2.0 parte dal tag
+e richiede il successo delle quattro build native.
 Il comando `release_desktop.py prepare` salva le note e il piano locale senza
 pubblicare. Il collaudo nativo dell’updater sugli altri sistemi e il passaggio
 fra due release complete restano aperti.
