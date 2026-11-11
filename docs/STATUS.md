@@ -4,6 +4,44 @@ Ultimo aggiornamento dei sorgenti: **11 novembre 2026**. Le nuove prove della UI
 React sono descritte qui sotto; le sezioni successive conservano i risultati
 dell’8 e 10 novembre. La disponibilità delle emittenti può cambiare.
 
+## Radio dell’11 novembre
+
+La sezione Radio include 1.310 stazioni italiane di WorldRadio, ricerca per nome
+e città, preferite, recenti, aggiornamento con cache e ascolto nel mini-player.
+TV e radio condividono il player e mantengono separati cataloghi, guida e zapping.
+La riconnessione prevede tre tentativi e si annulla con Pausa, cambio o chiusura.
+
+Sono passati 91 test Rust, 40 test unitari JavaScript, 66 Python e 27 scenari
+browser, comprese le catture visive. Formattazione, Clippy, bundle React e
+controlli del repository sono passati. La UI Radio è stata controllata nei due
+temi a 820 e 1280 pixel; il titolo poco leggibile nel tema chiaro è stato corretto.
+
+Riproduzioni misurate nella finestra nativa macOS arm64:
+
+| Sorgente | Formato | Avanzamento nei campioni | Metadati ricevuti |
+| --- | --- | --- | --- |
+| Rai Radio 1 | MP3 continuo | 62 s | No |
+| RDS FM 103.0 | MP3 continuo | 216 s | Sì |
+| R101 | AAC continuo | 56 s | Sì |
+| Riferimento audio Shaka | HLS/AAC | 62 s | Non richiesti dalla prova |
+
+Il riferimento HLS è stato aggiunto soltanto al profilo di collaudo e poi rimosso.
+Radio Spazio Noi, presente nel catalogo, ha restituito una playlist secondaria
+vuota con HTTP 200; il player ha mostrato l’errore dopo i tentativi previsti.
+Il formato HLS è quindi verificato con una sorgente di riferimento, mentre la
+disponibilità di questa emittente resta un problema della sorgente alla data
+della prova. Non è stato collaudato l’intero catalogo.
+
+Le misure mostrano avanzamento e byte audio decodificati, con audio disattivato;
+l’ascolto va confermato separatamente. Il mini-player è stato provato anche nella
+finestra nativa. Il passaggio Radio/TV ha ripreso il video di Rai 1; il runtime
+è entrato e uscito dal Picture-in-Picture, tornando al video nella finestra
+principale. Questa verifica è visiva, senza una nuova misura temporale TV.
+Il [riepilogo delle misure](evidence/2026-11-11-radio.json) omette
+indirizzi dei flussi, token e dati del profilo. Dettagli in [RADIO.md](RADIO.md).
+Le prove native Windows, Linux e Mac Intel restano da eseguire. Le pipeline
+mantengono i quattro target esistenti; le misure qui sopra riguardano solo macOS arm64.
+
 ## Preparazione della 0.2.0
 
 Versioni Rust, DLL Windows, frontend e lockfile sono allineati a `0.2.0`.

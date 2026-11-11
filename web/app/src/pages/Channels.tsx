@@ -10,10 +10,11 @@ import {
 } from '../components/common';
 
 function Hero() {
-    const state = app.get();
+    const state = { ...app.get(), channels: app.get().channels.filter((c) => c.kind !== 'radio') };
     const channel =
-        state.channels.find((c) => c.id === (state.preferences.recent[0] || 'rai1')) ||
-        state.channels[0];
+        state.preferences.recent
+            .map((id) => state.channels.find((c) => c.id === id))
+            .find(Boolean) || state.channels[0];
     if (!channel) return null;
     const programme = currentProgramme(state.guide.programmes[channel.id], state.now);
     return (
@@ -60,7 +61,7 @@ function Hero() {
     );
 }
 export function Channels({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
-    const state = app.get();
+    const state = { ...app.get(), channels: app.get().channels.filter((c) => c.kind !== 'radio') };
     const channels = filterChannels(state.channels, {
         provider: state.provider,
         group: state.group,

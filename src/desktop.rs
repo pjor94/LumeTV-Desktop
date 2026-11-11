@@ -28,11 +28,19 @@ use tiny_http::{Header, Method, Request, Response, Server, StatusCode};
 const MAX_BODY: usize = 2 * 1024 * 1024;
 
 struct Playback {
+    audio: Option<Arc<crate::radio_audio::AudioSession>>,
     id: String,
     channel_id: String,
     drm: bool,
     token: String,
     server: HarnessServer,
+}
+impl Drop for Playback {
+    fn drop(&mut self) {
+        if let Some(audio) = &self.audio {
+            audio.stop();
+        }
+    }
 }
 
 struct DesktopState {
@@ -126,6 +134,7 @@ impl DesktopServer {
             updater: UpdateService::new(directory),
         });
         state.catalog.refresh(false);
+        state.catalog.radios.refresh(false);
         state.guide.refresh(false);
         let shared = state.clone();
         let handle = thread::spawn(move || {
@@ -156,6 +165,7 @@ impl DesktopServer {
 impl Drop for DesktopServer {
     fn drop(&mut self) {
         self.state.updater.stop();
+        self.state.current.lock().expect("playback lock").take();
         self.state.stop.store(true, Ordering::Relaxed);
         if let Some(handle) = self.handle.take() {
             let _ = handle.join();
@@ -248,6 +258,46 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
         respond_json(request, 403, json!({"error":"unauthorized"}));
         return;
     }
+    if let Some(capability) = path.strip_prefix("/audio/") {
+        if header(&request, "Origin").is_some_and(|origin| origin != state.origin) {
+            respond_json(request, 403, json!({"error":"unauthorized"}));
+            return;
+        }
+        let audio = state
+            .current
+            .lock()
+            .expect("playback lock")
+            .as_ref()
+            .and_then(|p| p.audio.clone())
+            .filter(|a| a.capability == capability);
+        let Some(audio) = audio else {
+            respond_json(request, 404, json!({"error":"not_found"}));
+            return;
+        };
+        if request.method() == &Method::Head {
+            respond(request, 200, &audio.mime, Vec::new(), vec![]);
+            return;
+        }
+        if request.method() != &Method::Get {
+            respond_json(request, 405, json!({"error":"method_not_allowed"}));
+            return;
+        }
+        let Some(reader) = audio.reader() else {
+            respond_json(request, 409, json!({"error":"stream_in_use"}));
+            return;
+        };
+        let headers = [
+            ("Content-Type", audio.mime.as_str()),
+            ("Cache-Control", "no-store"),
+            ("Accept-Ranges", "none"),
+            ("Referrer-Policy", "no-referrer"),
+        ]
+        .iter()
+        .filter_map(|(k, v)| Header::from_bytes(k.as_bytes(), v.as_bytes()).ok())
+        .collect();
+        let _ = request.respond(Response::new(StatusCode(200), headers, reader, None, None));
+        return;
+    }
     if request.method() == &Method::Get {
         let asset = asset(&path);
         if let Some((mime, bytes)) = asset {
@@ -256,7 +306,7 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
         }
         match path.as_str() {
             "/api/bootstrap" => {
-                let catalog = state.catalog.snapshot();
+                let catalog = state.catalog.desktop_snapshot();
                 respond_json(
                     request,
                     200,
@@ -266,7 +316,8 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
             }
             "/api/catalog" => {
                 state.catalog.refresh(false);
-                respond_json(request, 200, json!(state.catalog.snapshot()));
+                state.catalog.radios.refresh(false);
+                respond_json(request, 200, json!(state.catalog.desktop_snapshot()));
             }
             "/api/preferences" => respond_json(request, 200, json!(state.preferences.get())),
             "/api/guide" => {
@@ -275,6 +326,19 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
             }
             "/api/playback/status" => {
                 respond_json(request, 200, playback_snapshot(state));
+            }
+            "/api/radio/status" => {
+                let current = state.current.lock().expect("playback lock").clone();
+                let value = current
+                    .map(|p| {
+                        json!({
+                            "playback_id": p.id,
+                            "channel_id": p.channel_id,
+                            "audio": p.audio.as_ref().map(|a| a.snapshot())
+                        })
+                    })
+                    .unwrap_or_else(|| json!({}));
+                respond_json(request, 200, value);
             }
             "/api/widevine" => respond_json(request, 200, json!(state.widevine.snapshot())),
             "/api/updates" => respond_json(request, 200, json!(state.updater.snapshot())),
@@ -330,7 +394,11 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
         }
         "/api/catalog/refresh" => {
             state.catalog.refresh(true);
-            respond_json(request, 200, json!(state.catalog.snapshot()));
+            respond_json(request, 200, json!(state.catalog.desktop_snapshot()));
+        }
+        "/api/radios/refresh" => {
+            state.catalog.radios.refresh(true);
+            respond_json(request, 200, json!(state.catalog.desktop_snapshot()));
         }
         "/api/preferences" => match state.preferences.update(&value) {
             Ok(preferences) => respond_json(request, 200, json!(preferences)),
@@ -395,7 +463,13 @@ fn playback_snapshot(state: &DesktopState) -> Value {
         current.drm,
         network["license_http_successes"].as_u64().unwrap_or(0) > 0,
     );
-    json!({"channel_id":current.channel_id,"events":events,"network":network,"assessment":assessment})
+    json!({
+        "channel_id": current.channel_id,
+        "events": events,
+        "network": network,
+        "assessment": assessment,
+        "audio": current.audio.as_ref().map(|audio| audio.snapshot())
+    })
 }
 
 fn play(request: Request, state: &DesktopState, value: &Value) {
@@ -407,15 +481,37 @@ fn play(request: Request, state: &DesktopState, value: &Value) {
         return;
     };
     let generation = state.generation.fetch_add(1, Ordering::SeqCst) + 1;
-    let stream = match state.resolver.resolve(&channel.stream_channel()) {
+    let mut stream = match state.resolver.resolve(&channel.stream_channel()) {
         Ok(stream) => stream,
         Err(_) => {
             respond_json(request, 502, json!({"error":"channel_unavailable"}));
             return;
         }
     };
+    let audio = if channel.kind == crate::model::MediaKind::Radio && stream.mime_type.is_none() {
+        match crate::radio_audio::AudioSession::connect(&stream.url) {
+            Ok(crate::radio_audio::Connection::Audio(audio)) => {
+                stream.mime_type = Some(audio.mime.clone());
+                Some(audio)
+            }
+            Ok(crate::radio_audio::Connection::Manifest(mime)) => {
+                stream.mime_type = Some(mime.into());
+                None
+            }
+            Err(_) => {
+                respond_json(request, 502, json!({"error":"radio_unavailable"}));
+                return;
+            }
+        }
+    } else {
+        None
+    };
     let drm = stream.drm.is_some();
-    let session = json!({"url":stream.url, "mime_type":stream.mime_type,
+    let uri = audio
+        .as_ref()
+        .map(|a| format!("{}/audio/{}", state.origin, a.capability))
+        .unwrap_or_else(|| stream.url.clone());
+    let session = json!({"url":uri, "mime_type":stream.mime_type,"continuous":audio.is_some(),
         "drm":stream.drm.as_ref().map(|_| json!({"key_system":"com.widevine.alpha"}))});
     let server = match HarnessServer::start(channel.stream_channel(), stream, 0, "relay") {
         Ok(server) => server,
@@ -431,6 +527,7 @@ fn play(request: Request, state: &DesktopState, value: &Value) {
         .1
         .to_owned();
     let playback = Arc::new(Playback {
+        audio,
         id: uuid::Uuid::new_v4().to_string(),
         channel_id: channel.id.clone(),
         drm,

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { app, playback, play, savePreferences } from '../app';
-import { currentProgramme, date, progress, providerName } from '../domain';
+import { currentProgramme, date, progress, providerName, isRadio } from '../domain';
 import { motion } from '../motion';
 import type { Channel } from '../types';
 
@@ -13,6 +13,12 @@ export function Icon({ name, className = '' }: { name: string; className?: strin
     );
 }
 export function StationLogo({ channel, extra = '' }: { channel: Channel; extra?: string }) {
+    if (isRadio(channel))
+        return (
+            <span className={`station-logo radio-logo ${extra}`} aria-hidden="true">
+                <Icon name="radio" />
+            </span>
+        );
     const state = app.get();
     const name = channel.name.replace(/^Rai\s*/, '');
     const url = state.guide.logos[channel.id]
@@ -94,6 +100,7 @@ export function FavoriteButton({
     );
 }
 export function ChannelCard({ channel }: { channel: Channel }) {
+    if (isRadio(channel)) return <RadioCard channel={channel} />;
     const state = app.get();
     const programme = currentProgramme(state.guide.programmes[channel.id], state.now);
     return (
@@ -124,6 +131,31 @@ export function ChannelCard({ channel }: { channel: Channel }) {
                 <span className="channel-play-hint">
                     <Icon name="play" />
                 </span>
+            </button>
+            <FavoriteButton channel={channel} />
+        </article>
+    );
+}
+export function RadioCard({ channel }: { channel: Channel }) {
+    const active = playback.store.get().current === channel.id;
+    return (
+        <article
+            className={`radio-card ${active ? 'is-playing' : ''}`}
+            data-key={`channel-${channel.id}`}
+        >
+            <button
+                className="radio-main"
+                data-play={channel.id}
+                data-focus={`channel-${channel.id}`}
+                aria-label={`Ascolta ${channel.name}, ${channel.group}`}
+                onClick={() => play(channel.id)}
+            >
+                <StationLogo channel={channel} />
+                <span className="radio-name">
+                    <strong>{channel.name}</strong>
+                    <small>{active ? 'In ascolto' : channel.group}</small>
+                </span>
+                <Icon name="play" className="radio-play" />
             </button>
             <FavoriteButton channel={channel} />
         </article>

@@ -70,6 +70,7 @@ impl HarnessServer {
         let origin = format!("http://{address}");
         let token = uuid::Uuid::new_v4().to_string();
         let media_stream = stream.clone();
+        let radio = channel.kind == crate::model::MediaKind::Radio;
         let media_client = Client::builder()
             .no_proxy()
             .dns_resolver(Arc::new(crate::network::PublicDns))
@@ -77,7 +78,13 @@ impl HarnessServer {
             .connect_timeout(Duration::from_secs(10))
             .referer(false)
             .redirect(reqwest::redirect::Policy::custom(move |attempt| {
-                if attempt.previous().len() >= 8 || !allowed_media(attempt.url(), &media_stream) {
+                if attempt.previous().len() >= 8
+                    || !(if radio {
+                        crate::radio::allowed_url(attempt.url())
+                    } else {
+                        allowed_media(attempt.url(), &media_stream)
+                    })
+                {
                     attempt.stop()
                 } else {
                     attempt.follow()
@@ -344,7 +351,11 @@ fn relay(request: Request, state: &State, input: &Value) {
     if if license {
         !public_https(&url)
     } else {
-        !allowed_media(&url, &state.stream)
+        !(if state.channel.kind == crate::model::MediaKind::Radio {
+            crate::radio::allowed_url(&url)
+        } else {
+            allowed_media(&url, &state.stream)
+        })
     } {
         state.network_failures.fetch_add(1, Ordering::Relaxed);
         record_network(state, license, 0, "blocked_host");

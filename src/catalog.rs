@@ -35,6 +35,8 @@ pub const PROVIDERS: &[&str] = &[
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct CatalogChannel {
+    #[serde(default)]
+    pub kind: crate::model::MediaKind,
     pub id: String,
     pub name: String,
     pub number: u32,
@@ -53,6 +55,7 @@ pub struct CatalogChannel {
 impl CatalogChannel {
     pub fn stream_channel(&self) -> Channel {
         Channel {
+            kind: self.kind,
             id: self.id.clone(),
             name: self.name.clone(),
             provider: self.provider.clone(),
@@ -285,6 +288,7 @@ fn entry(lines: &[String]) -> Result<Option<CatalogChannel>> {
         }
     }
     Ok(Some(CatalogChannel {
+        kind: crate::model::MediaKind::Tv,
         id,
         name: name.into(),
         number: attrs
@@ -378,6 +382,8 @@ pub fn parse_playlist(text: &str) -> Result<ParsedPlaylist> {
 
 #[derive(Clone, Default, Serialize)]
 pub struct CatalogStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub radio: Option<crate::radio::RadioStatus>,
     pub updated_at: u64,
     pub last_attempt: u64,
     pub next_retry_at: u64,
@@ -405,6 +411,7 @@ struct Store {
     parsed: ParsedPlaylist,
 }
 pub struct CatalogService {
+    pub radios: Arc<crate::radio::RadioService>,
     store: Mutex<Store>,
     loading: AtomicBool,
     path: PathBuf,
@@ -453,6 +460,7 @@ impl CatalogService {
             .build()
             .map_err(|_| anyhow!("Catalogo non disponibile"))?;
         Ok(Arc::new(Self {
+            radios: crate::radio::RadioService::new(directory)?,
             store: Mutex::new(store),
             loading: AtomicBool::new(false),
             path,
@@ -464,6 +472,7 @@ impl CatalogService {
         CatalogSnapshot {
             channels: store.parsed.channels.clone(),
             status: CatalogStatus {
+                radio: None,
                 updated_at: store.cache.last_success,
                 last_attempt: store.cache.last_attempt,
                 next_retry_at: store.cache.next_retry_at,
@@ -482,6 +491,16 @@ impl CatalogService {
             .iter()
             .find(|c| c.id == id)
             .cloned()
+            .or_else(|| self.radios.channel(id))
+    }
+    pub fn desktop_snapshot(&self) -> CatalogSnapshot {
+        let mut snapshot = self.snapshot();
+        let (channels, status) = self.radios.snapshot();
+        snapshot.channels.extend(channels);
+        snapshot.status.loading |= status.loading;
+        snapshot.status.revision.push_str(&status.revision);
+        snapshot.status.radio = Some(status);
+        snapshot
     }
     pub fn guide_signature(&self) -> String {
         guide_signature(&self.store.lock().expect("catalog lock").parsed.channels)

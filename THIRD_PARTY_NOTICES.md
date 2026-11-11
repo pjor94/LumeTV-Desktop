@@ -19,6 +19,8 @@ Il catalogo e la logica delle integrazioni di Lume TV derivano da **WorldLiveTV 
 
 **Catalogo completo — 8 novembre 2026:** estensione ai 126 canali supportati da Android nella playlist `resources/channels.m3u`, con porting delle integrazioni Sky/Discovery e della selezione Rai TGR da `StreamResolver.kt` e `RaiResolver.kt`. Le dirette conservano gli header previsti dalla playlist. La lista si aggiorna dalla fonte pubblica `tvchannels.worldtvlive.eu/tv/_dtt_kodi/list.m3u8`; `resources/catalog-legacy.json` mantiene gli identificativi dei precedenti 46 canali. Nuove cache, controlli delle destinazioni di rete e filtri desktop sono modifiche del progetto Lume TV.
 
+**Radio — 11 novembre 2026:** `resources/radios.json` e `resources/radio-source.json` provengono dal lavoro radio presente nel checkout locale di Lume TV Android, ancora non pubblicato al momento del porting. Il catalogo WorldRadio è fornito da WorldLiveTV / WLTV Group tramite `www.worldtvlive.eu/world/files/worldradio/IT.bin`. L’importatore Rust adatta la normalizzazione delle città, gli identificativi e la deduplicazione di `RadioCatalog.kt`. La copia di riferimento contiene 1.312 voci grezze, da cui risultano 1.310 stazioni. Cache, player audio e interfaccia desktop sono modifiche di Lume TV. Nomi e contenuti trasmessi restano dei rispettivi titolari.
+
 Le integrazioni adattate in Rust conservano l’origine e le attribuzioni del codice da cui derivano. Chi le ridistribuisce deve mantenerne gli avvisi e rispettare la GPL-3.0-or-later indicata in `Cargo.toml` e nel file `LICENSE`.
 
 ## Shaka Player

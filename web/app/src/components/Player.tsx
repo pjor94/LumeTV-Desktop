@@ -3,7 +3,7 @@ import { app, navigate, playback, savePreferences, toast } from '../app';
 import { useStore } from '../store';
 import { motion } from '../motion';
 import { QualityOptions } from '../pages/Settings';
-import { Icon } from './common';
+import { Icon, StationLogo } from './common';
 import type { Quality } from '../types';
 
 export async function fullscreen() {
@@ -21,7 +21,9 @@ export function toggleMute() {
 }
 export function Player() {
     const state = useStore(playback.store);
+    const radio = state.channel?.kind === 'radio';
     const preferences = app.get().preferences;
+    useEffect(() => setExpanded(false), [radio]);
     const video = useRef<HTMLVideoElement>(null);
     const dock = useRef<HTMLDivElement>(null);
     const options = useRef<HTMLDivElement>(null);
@@ -61,9 +63,9 @@ export function Player() {
         <div
             ref={dock}
             id="player-dock"
-            className={`player-dock ${state.hasPicture ? 'has-picture' : ''} ${controlsHidden && !overlay ? 'controls-hidden' : ''}`}
+            className={`player-dock ${radio ? 'radio-mode' : ''} ${state.hasPicture ? 'has-picture' : ''} ${controlsHidden && !overlay ? 'controls-hidden' : ''}`}
             tabIndex={0}
-            aria-label="Player video"
+            aria-label={radio ? 'Player radio' : 'Player video'}
             onMouseMove={() => {
                 setControlsHidden(false);
                 clearTimeout(hideTimer.current);
@@ -77,9 +79,19 @@ export function Player() {
                 ref={video}
                 id="video"
                 playsInline
-                aria-label="Diretta TV"
-                onDoubleClick={() => void fullscreen()}
+                aria-label={radio ? 'Diretta radio' : 'Diretta TV'}
+                onDoubleClick={() => {
+                    if (!radio) void fullscreen();
+                }}
             />
+            {radio && state.channel && (
+                <div className="audio-screen">
+                    <StationLogo channel={state.channel} />
+                    <strong>{state.channel.name}</strong>
+                    <span>{state.channel.group}</span>
+                    <p>{state.nowPlaying || 'La tua radio, in diretta.'}</p>
+                </div>
+            )}
             <div className="player-backdrop">
                 <img src="/assets/symbol.svg" alt="" />
             </div>
@@ -167,7 +179,7 @@ export function Player() {
                         className="icon-button"
                         id="play-pause"
                         aria-label={state.paused ? 'Riprendi' : 'Pausa'}
-                        title="Pausa · Spazio"
+                        title={`${state.paused ? 'Riprendi' : 'Pausa'} · Spazio`}
                         onClick={() => playback.togglePause()}
                     >
                         <Icon name={state.paused ? 'play' : 'pause'} />

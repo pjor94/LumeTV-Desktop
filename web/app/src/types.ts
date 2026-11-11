@@ -1,4 +1,5 @@
 export interface Channel {
+    kind?: 'tv' | 'radio';
     id: string;
     name: string;
     number: number;
@@ -29,6 +30,13 @@ export interface Preferences {
     zap_favorites_only: boolean;
 }
 export interface CatalogStatus {
+    radio?: {
+        updated_at: number;
+        next_retry_at: number;
+        loading: boolean;
+        error?: string | null;
+        revision: string;
+    };
     updated_at: number;
     loading: boolean;
     error?: string | null;
@@ -56,9 +64,10 @@ export interface Bootstrap {
 export interface Session {
     playback_id: string;
     channel: Channel;
-    stream: { url: string; drm?: unknown; mime_type?: string };
+    stream: { url: string; drm?: unknown; mime_type?: string; continuous?: boolean };
 }
-export type Route = 'channels' | 'discover' | 'guide' | 'favorites' | 'settings' | 'watch';
+export type Route =
+    'channels' | 'radio' | 'discover' | 'guide' | 'favorites' | 'settings' | 'watch';
 export type Period = 'now' | 'soon' | 'tonight';
 export type WidevinePhase =
     'unavailable' | 'checking' | 'downloading' | 'installing' | 'installed' | 'error';
@@ -80,6 +89,7 @@ export interface Track {
     active: boolean;
 }
 export interface PlaybackState {
+    nowPlaying: string;
     current: string | null;
     channel: Channel | null;
     phase: PlaybackPhase;
@@ -106,6 +116,9 @@ export interface Toast {
     dismissing?: boolean;
 }
 export interface AppState {
+    radioFilter: 'all' | 'favorites' | 'recent';
+    radioPage: number;
+    radioQuery: string;
     ready: boolean;
     failed: boolean;
     channels: Channel[];

@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Models adapted from Lume TV's Kotlin core (2026).
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MediaKind {
+    #[default]
+    Tv,
+    Radio,
+}
 
 #[derive(Clone, Serialize)]
 pub struct Channel {
+    pub kind: MediaKind,
     pub id: String,
     pub name: String,
     pub provider: String,

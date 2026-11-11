@@ -7,6 +7,8 @@ pub mod model;
 pub mod network;
 pub mod preferences;
 pub mod providers;
+pub mod radio;
+pub mod radio_audio;
 pub mod report;
 pub mod runtime;
 pub mod server;

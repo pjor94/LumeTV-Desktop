@@ -102,7 +102,14 @@ impl Resolver {
                     .entry("User-Agent".into())
                     .or_insert_with(|| USER_AGENT.into());
                 Ok(ResolvedStream {
-                    mime_type: Some(mime_for_url(url.as_str()).into()),
+                    mime_type: if channel.kind == crate::model::MediaKind::Radio
+                        && !url.path().ends_with(".m3u8")
+                        && !url.path().ends_with(".mpd")
+                    {
+                        None
+                    } else {
+                        Some(mime_for_url(url.as_str()).into())
+                    },
                     url: url.into(),
                     headers,
                     drm: None,

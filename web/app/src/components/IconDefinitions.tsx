@@ -2,6 +2,12 @@ export function IconDefinitions() {
     return (
         <svg className="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <defs>
+                <symbol id="i-radio" viewBox="0 0 24 24">
+                    <rect x="3" y="8" width="18" height="13" rx="3" />
+                    <path d="m5 8 12-5M6 12h12" />
+                    <circle cx="8" cy="16.5" r="1.5" />
+                    <path d="M13 16h5m-5 3h5" />
+                </symbol>
                 <symbol id="i-grid" viewBox="0 0 24 24">
                     <rect x="3" y="3" width="7" height="7" rx="2" />
                     <rect x="14" y="3" width="7" height="7" rx="2" />

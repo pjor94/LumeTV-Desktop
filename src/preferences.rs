@@ -100,7 +100,7 @@ impl PreferenceStore {
             }
             next.recent.retain(|v| v != id);
             next.recent.insert(0, id.to_owned());
-            next.recent.truncate(8);
+            next.recent.truncate(40);
         }
         if patch["clear_recent"] == true {
             next.recent.clear();
@@ -172,7 +172,7 @@ fn normalize(value: &mut Preferences) {
     value
         .recent
         .retain(|id| valid_id(id) && seen.insert(id.clone()));
-    value.recent.truncate(8);
+    value.recent.truncate(40);
     value
         .reminders
         .retain(|r| valid_id(&r.channel_id) && r.title.chars().count() <= 300);

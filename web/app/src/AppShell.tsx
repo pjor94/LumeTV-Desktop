@@ -24,6 +24,8 @@ import { Discovery } from './pages/Discovery';
 import { GuidePage } from './pages/Guide';
 import { Search } from './pages/Search';
 import { Settings } from './pages/Settings';
+import { Radio } from './pages/Radio';
+import { isRadio } from './domain';
 import type { Route } from './types';
 import { connectUpdates, updates } from './updates';
 
@@ -32,9 +34,13 @@ const routes: [Route, string, string][] = [
     ['discover', 'Cosa guardare', 'compass'],
     ['guide', 'Guida TV', 'guide'],
     ['favorites', 'Preferiti', 'star'],
+    ['radio', 'Radio', 'radio'],
 ];
 export function App() {
     const state = useStore(app);
+    const favoriteCount = state.channels.filter(
+        (c) => !isRadio(c) && state.preferences.favorites.includes(c.id),
+    ).length;
     const updateStatus = useStore(updates);
     const notifiedUpdate = useRef('');
     const current = useStoreValue(playback.store, (state) => state.current);
@@ -52,7 +58,7 @@ export function App() {
     const channel = playback.store.get().channel;
     const search = useRef<HTMLInputElement>(null);
     const scroll = useRef<HTMLDivElement>(null);
-    const effectivePage = state.query ? 'search' : state.page;
+    const effectivePage = state.query && state.page !== 'radio' ? 'search' : state.page;
     useLayoutEffect(() => {
         document.body.dataset.page = effectivePage;
         const dock = document.getElementById('player-dock');
@@ -118,7 +124,8 @@ export function App() {
                 playback.togglePause();
             }
             if (event.key.toLowerCase() === 'm') toggleMute();
-            if (event.key.toLowerCase() === 'f') void fullscreen();
+            if (event.key.toLowerCase() === 'f' && !isRadio(playback.store.get().channel))
+                void fullscreen();
             if (event.key === 'ArrowDown' || event.key === 'PageDown') {
                 event.preventDefault();
                 zap(1);
@@ -171,9 +178,9 @@ export function App() {
                                 <span
                                     className="nav-count"
                                     id="favorite-count"
-                                    hidden={!state.preferences.favorites.length}
+                                    hidden={!favoriteCount}
                                 >
-                                    {state.preferences.favorites.length}
+                                    {favoriteCount}
                                 </span>
                             )}
                         </button>
@@ -185,7 +192,9 @@ export function App() {
                             <StationLogo channel={channel} />
                             <span>
                                 <strong>{channel.name}</strong>
-                                <small>Stai guardando</small>
+                                <small>
+                                    {isRadio(channel) ? 'Stai ascoltando' : 'Stai guardando'}
+                                </small>
                             </span>
                             <Equalizer />
                         </button>
@@ -239,13 +248,21 @@ export function App() {
                     </div>
                     <label className="search-box">
                         <Icon name="search" />
-                        <span className="sr-only">Cerca canale o programma</span>
+                        <span className="sr-only">
+                            {state.page === 'radio'
+                                ? 'Cerca radio o città'
+                                : 'Cerca canale o programma'}
+                        </span>
                         <input
                             ref={search}
                             id="search"
                             type="search"
                             autoComplete="off"
-                            placeholder="Cerca canale o programma…"
+                            placeholder={
+                                state.page === 'radio'
+                                    ? 'Cerca radio o città…'
+                                    : 'Cerca canale o programma…'
+                            }
                             maxLength={120}
                             value={state.query}
                             onChange={(event) => setQuery(event.target.value)}
@@ -276,6 +293,8 @@ export function App() {
                                 <p>Metti comodo il tuo mondo.</p>
                                 <span>Caricamento dei canali…</span>
                             </div>
+                        ) : page === 'radio' ? (
+                            <Radio />
                         ) : state.query ? (
                             <Search />
                         ) : page === 'discover' ? (

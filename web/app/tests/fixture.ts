@@ -74,17 +74,40 @@ export async function fixture(
         status,
         delayPlay = false,
         updates,
+        radioChannels = [],
+        radioTitle = '',
+        continuousRadio = false,
     }: {
         widevine?: boolean;
         startupWidevine?: boolean | (() => boolean);
         status?: Partial<WidevineStatus> | (() => Partial<WidevineStatus>);
         delayPlay?: boolean;
+        radioChannels?: Channel[];
+        radioTitle?: string;
+        continuousRadio?: boolean;
         updates?:
             | Partial<UpdateStatus>
             | ((path: string, body: Record<string, unknown>) => Partial<UpdateStatus>);
     } = {},
 ) {
     let preferences = structuredClone(defaultPreferences);
+    const allChannels = [...channels, ...radioChannels];
+    const wav = Buffer.alloc(44 + 32000);
+    wav.write('RIFF', 0);
+    wav.writeUInt32LE(wav.length - 8, 4);
+    wav.write('WAVEfmt ', 8);
+    wav.writeUInt32LE(16, 16);
+    wav.writeUInt16LE(1, 20);
+    wav.writeUInt16LE(1, 22);
+    wav.writeUInt32LE(16000, 24);
+    wav.writeUInt32LE(32000, 28);
+    wav.writeUInt16LE(2, 32);
+    wav.writeUInt16LE(16, 34);
+    wav.write('data', 36);
+    wav.writeUInt32LE(32000, 40);
+    await page.route('**/audio/fixture.wav', (route) =>
+        route.fulfill({ contentType: 'audio/wav', body: wav }),
+    );
     const calls: string[] = [];
     const plays: string[] = [];
     await page.clock.setFixedTime(now);
@@ -95,13 +118,14 @@ export async function fixture(
         const body = request.method() === 'POST' ? request.postDataJSON() : {};
         let data: unknown;
         if (path === '/api/bootstrap')
-            data = { channels, preferences, catalog, version: '0.1.0', os: 'linux' };
+            data = { channels: allChannels, preferences, catalog, version: '0.1.0', os: 'linux' };
         else if (path.startsWith('/api/updates'))
             data = {
                 ...updateStatus,
                 ...(typeof updates === 'function' ? updates(path, body) : updates),
             };
-        else if (path.startsWith('/api/catalog')) data = { ...catalog, channels };
+        else if (path.startsWith('/api/catalog') || path === '/api/radios/refresh')
+            data = { ...catalog, channels: allChannels };
         else if (path.startsWith('/api/guide')) data = guide;
         else if (path === '/api/preferences') {
             if (body.toggle_favorite) {
@@ -131,17 +155,35 @@ export async function fixture(
             ] as const)
                 if (body[key] !== undefined) Object.assign(preferences, { [key]: body[key] });
             data = preferences;
-        } else if (path === '/api/played') data = preferences;
+        } else if (path === '/api/played') {
+            const id = String(body.playback_id).replace(/^test-/, '');
+            if (allChannels.some((c) => c.id === id))
+                preferences.recent = [id, ...preferences.recent.filter((x) => x !== id)].slice(
+                    0,
+                    40,
+                );
+            data = preferences;
+        } else if (path === '/api/radio/status')
+            data = { playback_id: `test-${plays.at(-1)}`, audio: { now_playing: radioTitle } };
         else if (path === '/api/play') {
             plays.push(body.channel_id);
             if (delayPlay && body.channel_id === 'rai1')
                 await new Promise((resolve) => setTimeout(resolve, 600));
             data = {
                 playback_id: `test-${body.channel_id}`,
-                channel: channels.find((c) => c.id === body.channel_id),
+                channel: allChannels.find((c) => c.id === body.channel_id),
                 stream: {
-                    url: 'lume:https://fixture.invalid/live.mpd',
-                    drm: body.channel_id === 'rai1' ? null : {},
+                    url:
+                        continuousRadio && radioChannels.some((c) => c.id === body.channel_id)
+                            ? '/audio/fixture.wav'
+                            : 'lume:https://fixture.invalid/live.mpd',
+                    continuous:
+                        continuousRadio && radioChannels.some((c) => c.id === body.channel_id),
+                    drm:
+                        radioChannels.some((c) => c.id === body.channel_id) ||
+                        body.channel_id === 'rai1'
+                            ? null
+                            : {},
                 },
             };
         } else if (path.startsWith('/api/widevine'))
@@ -169,7 +211,7 @@ export async function fixture(
     window.shaka = {
       polyfill: { installAll() {} }, net: { NetworkingEngine: { registerScheme() {} } },
       Player: class {
-        constructor() { this.handlers = {}; }
+        constructor() { this.handlers = {}; window.testPlayer.emit = (name, event) => this.handlers[name]?.(event); }
         async attach(video) { this.video = video; window.testPlayer.attachments++; }
         async unload() { window.testPlayer.unloads++; }
         async destroy() { window.testPlayer.destroyed++; }

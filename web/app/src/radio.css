@@ -1,0 +1,200 @@
+.radio-toolbar,
+.radio-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.radio-toolbar {
+  margin: 28px 0 20px;
+}
+.radio-results,
+.radio-notice {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+.radio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+.radio-card {
+  position: relative;
+  min-width: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.radio-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  width: 100%;
+  min-height: 104px;
+  padding: 22px 54px 22px 18px;
+}
+.radio-main:hover {
+  background: var(--hover);
+}
+.radio-card.is-playing {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.radio-name {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+.radio-name strong {
+  font-size: 14px;
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.radio-name small {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.station-logo.radio-logo {
+  background: var(--raised);
+  color: var(--accent);
+  box-shadow: none;
+  border-radius: 11px;
+  flex-shrink: 0;
+}
+.radio-logo svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.radio-card .favorite-button {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+}
+.radio-play {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  bottom: 18px;
+  right: 20px;
+  color: var(--muted);
+}
+.radio-pagination {
+  margin: 24px 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.audio-screen {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  gap: 13px;
+  padding: 48px 24px 80px;
+  background: var(--surface);
+}
+.audio-screen .radio-logo {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 4px;
+}
+.audio-screen .radio-logo svg {
+  width: 36px;
+  height: 36px;
+}
+.audio-screen strong {
+  color: var(--white);
+  font-size: clamp(20px, 2.4vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.audio-screen span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.audio-screen p {
+  font-size: 15px;
+  max-width: 50ch;
+  color: var(--white);
+  margin: 6px 0 0;
+}
+.radio-mode #video,
+.radio-mode .player-backdrop,
+.radio-mode .player-timeline,
+.radio-mode #picture-in-picture,
+.radio-mode #fullscreen,
+.radio-mode #player-settings {
+  display: none !important;
+}
+body:not([data-page='watch']) .audio-screen {
+  padding: 8px 12px 38px;
+  gap: 5px;
+}
+body:not([data-page='watch']) .audio-screen .radio-logo {
+  display: none;
+}
+body:not([data-page='watch']) .audio-screen strong {
+  font-size: 15px;
+}
+body:not([data-page='watch']) .audio-screen p {
+  font-size: 12px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.radio-browser-search {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--background);
+  padding: 0 12px;
+  color: var(--white);
+  font: inherit;
+  font-size: 12px;
+  margin: 12px 0;
+}
+.radio-browser-note {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 12px;
+}
+.radio-mode .player-spinner {
+  border-top-color: var(--accent);
+}
+
+.radio-mode .live-track,
+.radio-mode #player-options {
+  display: none !important;
+}
+
+.radio-card .favorite-button {
+  opacity: 1;
+  color: var(--muted);
+}
+.radio-card .favorite-button[aria-pressed='true'] {
+  color: var(--accent);
+}
+.radio-watch-channel .station-logo {
+  flex-shrink: 0;
+}

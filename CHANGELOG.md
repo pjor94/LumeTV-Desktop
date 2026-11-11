@@ -2,6 +2,10 @@
 
 ## 0.2.0
 
+- Sezione Radio con 1.310 stazioni italiane di WorldRadio, ricerca per nome e città,
+  preferite, recenti e catalogo aggiornato ogni giorno con copia locale.
+- Riproduzione radio MP3/AAC/HLS nel player integrato, mini-player e titolo del
+  brano quando fornito dalla stazione; riconnessione con tentativi limitati.
 - Aggiornamenti dell’app dalle release GitHub: controllo in background, download
   con percentuale e annullamento, firma Ed25519 e verifica SHA-256.
 - Installazione del pacchetto completo con riavvio per bundle e cartelle portabili

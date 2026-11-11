@@ -22,6 +22,7 @@ struct Fixture {
 impl Fixture {
     fn new() -> Result<Self> {
         let channel = Channel {
+            kind: Default::default(),
             headers: Default::default(),
             id: "fixture".into(),
             name: "Synthetic fixture".into(),

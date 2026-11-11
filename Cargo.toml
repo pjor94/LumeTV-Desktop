@@ -54,7 +54,7 @@ zip = { version = "=9.5.1", default-features = false, features = ["deflate-flate
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 tar = "0.4"
 tiny_http = "0.12"
-tokio = { version = "1", default-features = false, features = ["rt"] }
+tokio = { version = "1", default-features = false, features = ["rt", "time", "net"] }
 uuid = { version = "1", features = ["v4"] }
 cef = { workspace = true, optional = true }
 

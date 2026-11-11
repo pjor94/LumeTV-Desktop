@@ -1,12 +1,15 @@
 import { api, bounded, createPreferenceQueue, initializeSession } from './api';
 import { createStore } from './store';
-import { matchesProvider } from './domain';
+import { matchesProvider, isRadio } from './domain';
 import { PlaybackController } from './playback';
 import { StartupController } from './startup';
 import { motion, type DockRect } from './motion';
 import type { AppState, Bootstrap, Catalog, Guide, Preferences, Route } from './types';
 
 export const app = createStore<AppState>({
+    radioFilter: 'all',
+    radioPage: 0,
+    radioQuery: '',
     ready: false,
     failed: false,
     channels: [],
@@ -96,6 +99,7 @@ export function takeDockTransition() {
     return before;
 }
 export function setQuery(query: string) {
+    if (app.get().page === 'radio') app.set({ radioQuery: query, radioPage: 0 });
     captureDock();
     app.set({ query });
 }
@@ -106,7 +110,7 @@ export function navigate(page: Route) {
     app.set({
         page,
         previousPage: state.page !== 'watch' ? state.page : state.previousPage,
-        query: '',
+        query: page === 'radio' ? state.radioQuery : '',
         dialogOpen: false,
         ...(page !== state.page || !['channels', 'favorites'].includes(page)
             ? { provider: 'all', group: 'all' }
@@ -148,10 +152,12 @@ export async function toggleReminder(key: string) {
 }
 export function zap(direction: number) {
     const { channels: all, preferences } = app.get();
+    const kind = isRadio(playback.store.get().channel);
+    const eligible = all.filter((c) => isRadio(c) === kind);
     const channels =
         preferences.zap_favorites_only && preferences.favorites.length
-            ? all.filter((c) => preferences.favorites.includes(c.id))
-            : all;
+            ? eligible.filter((c) => preferences.favorites.includes(c.id))
+            : eligible;
     if (!channels.length) return;
     const index = channels.findIndex((c) => c.id === playback.store.get().current);
     play(channels[(Math.max(0, index) + direction + channels.length) % channels.length].id);
@@ -160,13 +166,17 @@ let guidePoll: ReturnType<typeof setTimeout> | undefined;
 let catalogPoll: ReturnType<typeof setTimeout> | undefined;
 let catalogRequest: Promise<void> | null = null;
 let guideRequest: Promise<void> | null = null;
-export function refreshCatalog(force = false): Promise<void> {
+export function refreshCatalog(force = false, radioOnly = false): Promise<void> {
     if (catalogRequest) return catalogRequest;
     clearTimeout(catalogPoll);
     catalogRequest = (async () => {
         try {
             const { channels, ...catalog } = await api<Catalog>(
-                force ? '/api/catalog/refresh' : '/api/catalog',
+                force
+                    ? radioOnly
+                        ? '/api/radios/refresh'
+                        : '/api/catalog/refresh'
+                    : '/api/catalog',
                 force ? {} : undefined,
             );
             const state = app.get();
@@ -272,8 +282,6 @@ export function bootstrap() {
             setInterval(tick, 15_000);
             window.addEventListener('online', () => {
                 if (startup.store.get().phase === 'error') void startup.start();
-                const state = playback.store.get();
-                if (state.phase === 'error' && state.current) play(state.current);
                 if (app.get().guide.error) void refreshGuide();
                 void refreshCatalog();
             });

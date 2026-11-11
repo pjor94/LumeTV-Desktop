@@ -28,6 +28,12 @@ fn desktop_authentication_preferences_and_stale_playback_are_enforced_without_pr
             ..Default::default()
         })?,
     )?;
+    std::fs::write(
+        directory.join("radio-catalog.json"),
+        serde_json::to_vec(
+            &json!({"text":lume_player::radio::BUNDLED,"updated_at":now_ms(),"attempted":now_ms(),"next_retry_at":0}),
+        )?,
+    )?;
     let server = DesktopServer::start(&directory)?;
     let token = server.launch_url.split_once('#').unwrap().1;
     let client = Client::builder().no_proxy().build()?;
@@ -54,7 +60,24 @@ fn desktop_authentication_preferences_and_stale_playback_are_enforced_without_pr
         .header("X-Lume-Token", token)
         .send()?
         .json()?;
-    assert_eq!(initial["channels"].as_array().unwrap().len(), 126);
+    assert_eq!(
+        initial["channels"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|c| c["kind"] == "tv")
+            .count(),
+        126
+    );
+    assert_eq!(
+        initial["channels"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|c| c["kind"] == "radio")
+            .count(),
+        1310
+    );
     for path in ["/api/widevine", "/api/widevine/update"] {
         let response = if path.ends_with("/update") {
             client
@@ -72,6 +95,33 @@ fn desktop_authentication_preferences_and_stale_playback_are_enforced_without_pr
         .send()?
         .json()?;
     assert_eq!(component["phase"], "unavailable");
+    for path in ["/api/radio/status", "/api/radios/refresh"] {
+        let request = if path.ends_with("refresh") {
+            client
+                .post(format!("{}{path}", server.origin))
+                .json(&json!({}))
+        } else {
+            client.get(format!("{}{path}", server.origin))
+        };
+        assert_eq!(request.send()?.status().as_u16(), 403);
+    }
+    assert_eq!(
+        client
+            .get(format!("{}/audio/invalid", server.origin))
+            .send()?
+            .status()
+            .as_u16(),
+        404
+    );
+    assert_eq!(
+        client
+            .get(format!("{}/audio/invalid", server.origin))
+            .header("Origin", "https://untrusted.test")
+            .send()?
+            .status()
+            .as_u16(),
+        403
+    );
     assert!(component.get("downloaded_bytes").is_none());
     let html = client.get(format!("{}/", server.origin)).send()?.text()?;
     assert!(html.contains("/app.js"));

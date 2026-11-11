@@ -1,0 +1,88 @@
+{
+  "date": "2026-11-11",
+  "scope": "Desktop radio implementation, local working tree",
+  "native_platform": "macos-arm64",
+  "bundled_stations": 1310,
+  "audio_audibility": "not_verified",
+  "runs": [
+    {
+      "name": "Rai Radio 1",
+      "channel_id": "f9968618352956c7cce3fb9f",
+      "format": "MP3",
+      "reference_stream_only": false,
+      "sample_count": 32,
+      "progress_seconds": 62.0,
+      "audio_decoded_bytes": 2055524,
+      "ready_state": 4,
+      "paused": false,
+      "muted": true,
+      "metadata_observed": false,
+      "source_report_sha256": "0bfca868838228bc207fe43530c82c0a77afd25e9936af3064025fa858112435"
+    },
+    {
+      "name": "RDS FM 103.0",
+      "channel_id": "9f854304ae1e803332cc560a",
+      "format": "MP3",
+      "reference_stream_only": false,
+      "sample_count": 109,
+      "progress_seconds": 215.995,
+      "audio_decoded_bytes": 6983424,
+      "ready_state": 4,
+      "paused": false,
+      "muted": true,
+      "metadata_observed": true,
+      "source_report_sha256": "507305d7ec40876351b2a09f516624dfb18b5e0a05577e3e8113ab191d1d8bc1"
+    },
+    {
+      "name": "R101",
+      "channel_id": "ff6ea00eac0820b8ffa9c509",
+      "format": "AAC",
+      "reference_stream_only": false,
+      "sample_count": 29,
+      "progress_seconds": 56.003,
+      "audio_decoded_bytes": 699302,
+      "ready_state": 4,
+      "paused": false,
+      "muted": true,
+      "metadata_observed": true,
+      "source_report_sha256": "4657e84f7b9e74bca8aa7b1d65fc40211e69740655e6ea33cd640497932a6ce0"
+    },
+    {
+      "name": "Shaka audio-only reference",
+      "channel_id": "1c8905776126c2d24b542143",
+      "format": "HLS/AAC",
+      "reference_stream_only": true,
+      "sample_count": 32,
+      "progress_seconds": 61.998,
+      "audio_decoded_bytes": 48718,
+      "ready_state": 4,
+      "paused": false,
+      "muted": true,
+      "metadata_observed": false,
+      "source_report_sha256": "df7350c11f69ac97cda547321e87367b55dd120f1d9ac74d6460b49e4c45d376"
+    }
+  ],
+  "upstream_failure": {
+    "station": "Radio Spazio Noi",
+    "format": "HLS",
+    "child_http_status": 200,
+    "child_bytes": 0,
+    "player_error": 4015
+  },
+  "hls_reference_added_only_to_local_test_profile": true,
+  "windows_linux_and_macos_intel": "native_validation_pending",
+  "tests": {
+    "rust": 91,
+    "javascript_unit": 40,
+    "python": 66,
+    "browser_scenarios_with_visual_captures": 27
+  },
+  "native_ui_observations": {
+    "radio_mini_player": true,
+    "radio_to_tv_visible_video": true,
+    "rai1_picture_in_picture_entered_and_exited": true,
+    "new_timed_tv_measurement": false,
+    "playback_stopped_at_end": true
+  },
+  "hls_reference_name": "Shaka demo: Audio only HLS with raw AAC"
+}

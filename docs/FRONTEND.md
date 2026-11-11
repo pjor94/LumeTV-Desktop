@@ -13,6 +13,8 @@ CSS, icone e animazioni derivano dall’interfaccia precedente.
 | [components](../web/app/src/components) | Player, dialoghi e componenti condivisi |
 | [app.ts](../web/app/src/app.ts) | Catalogo, guida, preferenze, promemoria e stato delle schermate |
 | [playback.ts](../web/app/src/playback.ts) | Shaka, sessioni, cambio canale, tracce e diagnostica |
+| [recovery.ts](../web/app/src/recovery.ts) | Tentativi di riconnessione, attesa della rete e annullamento |
+| [pages/Radio.tsx](../web/app/src/pages/Radio.tsx) | Catalogo radio, ricerca, preferite, recenti e paginazione |
 | [api.ts](../web/app/src/api.ts) | API locale autenticata e coda dei salvataggi |
 | [widevine.ts](../web/app/src/widevine.ts) | Preparazione del componente e verifica EME |
 | [updates.ts](../web/app/src/updates.ts) | Stato e controlli degli aggiornamenti dell’app |
@@ -27,6 +29,12 @@ I salvataggi di preferenze e cronologia passano dalla stessa coda. Rust conserva
 `preferences.json`; la UI non mantiene una seconda copia persistente.
 Il frammento iniziale dell’URL contiene il token della sessione locale e viene
 rimosso all’avvio. La navigazione interna non usa il frammento come router.
+
+TV e radio condividono il player persistente. HLS/DASH passano da Shaka;
+le radio audio continue usano `video.src` con il relay Rust descritto in
+[RADIO.md](RADIO.md). Il cambio di modalità scarica la sessione precedente.
+Ricerca, guida e scoperta TV escludono le radio; lo zapping resta nel tipo
+di contenuto in riproduzione. Il catalogo Radio rende 48 stazioni per pagina.
 
 ## Widevine
 

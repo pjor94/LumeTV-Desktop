@@ -1,4 +1,5 @@
 import type { Channel, Period, Programme } from './types';
+export const isRadio = (channel: Channel | null | undefined) => channel?.kind === 'radio';
 
 export const searchable = (value: unknown) =>
     String(value || '')
@@ -34,6 +35,7 @@ export const matchesProvider = (channel: Channel, provider: string) =>
     channel.provider === provider ||
     (provider === 'rai' && channel.provider === 'rainewsrg');
 interface Filters {
+    kind?: 'tv' | 'radio';
     provider?: string;
     group?: string;
     favoritesOnly?: boolean;
@@ -45,6 +47,7 @@ interface Filters {
 export function filterChannels(
     channels: Channel[],
     {
+        kind = 'tv',
         provider = 'all',
         group = 'all',
         favoritesOnly = false,
@@ -57,6 +60,7 @@ export function filterChannels(
     const words = searchable(query).split(' ').filter(Boolean);
     return channels.filter(
         (c) =>
+            isRadio(c) === (kind === 'radio') &&
             matchesProvider(c, provider) &&
             (group === 'all' || c.group === group) &&
             (!favoritesOnly || favorites.includes(c.id)) &&

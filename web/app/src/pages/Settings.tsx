@@ -56,7 +56,7 @@ export function QualityOptions({ settings = false }: { settings?: boolean }) {
     );
 }
 export function Settings() {
-    const state = app.get();
+    const state = { ...app.get(), channels: app.get().channels.filter((c) => c.kind !== 'radio') };
     const p = state.preferences;
     return (
         <>

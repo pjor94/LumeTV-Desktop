@@ -34,6 +34,7 @@ REQUIRED_FILES = {
     ".gitattributes", ".gitignore", "Cargo.toml", "Cargo.lock", "LICENSE",
     "README.md", "THIRD_PARTY_NOTICES.md", "resources/channels.m3u",
     "resources/catalog-legacy.json", "vendor/download-cef/LICENSE-APACHE",
+    "resources/radios.json", "resources/radio-source.json", "src/radio.rs", "src/radio_audio.rs", "docs/RADIO.md",
     "vendor/download-cef/LICENSE-MIT", "vendor/download-cef/LUME_PATCH.md",
     "vendor/shaka/LICENSE", "vendor/shaka/dist/shaka-player.compiled.js",
     "vendor/download-cef/lume-sdk-pins.json", "crates/lume-cef-windows/Cargo.toml",

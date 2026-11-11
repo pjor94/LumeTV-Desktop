@@ -2,6 +2,10 @@
 
 Alla verifica dell’8 novembre 2026 su macOS arm64, il catalogo incluso e la lista online contenevano **126 canali supportati**, con la stessa selezione dell’app Android. Il [riepilogo delle verifiche](STATUS.md) riporta lo stato del player sulle diverse piattaforme.
 
+L’11 novembre è stata aggiunta una sezione separata con **1.310 radio italiane**.
+Il conteggio TV e le associazioni EPG restano riferiti ai 126 canali.
+Fonte, importazione e cache delle radio sono descritti in [RADIO.md](RADIO.md).
+
 | Integrazione | Canali | Manifest validi nell’audit |
 | --- | ---: | ---: |
 | Rai | 21 | 14 |

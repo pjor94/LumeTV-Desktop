@@ -11,7 +11,7 @@ import {
 import type { Period } from '../types';
 
 export function Discovery() {
-    const state = app.get();
+    const state = { ...app.get(), channels: app.get().channels.filter((c) => c.kind !== 'radio') };
     const items = selectProgrammes(state.channels, state.guide.programmes, {
         period: state.period,
         favorites: state.preferences.favorites,

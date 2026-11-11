@@ -38,6 +38,10 @@ CEF incorporato e Shaka Player: puoi avviare Lume senza installare Chrome.
 L’interfaccia passa a React mantenendo lo stile di Lume. Il player resta attivo
 quando cambi pagina o passi al mini-player, senza riaprire la diretta.
 
+La sezione **Radio** aggiunge 1.310 stazioni italiane di WorldRadio, con ricerca
+per nome o città, preferite e recenti. Puoi continuare l’ascolto nel mini-player;
+il titolo del brano compare quando viene comunicato dall’emittente.
+
 Al primo avvio una schermata prepara Widevine prima di mostrare il catalogo.
 Da **Impostazioni → Aggiornamenti dell’app** puoi controllare le nuove versioni,
 scaricarle con una percentuale di avanzamento e scegliere quando installarle.
@@ -63,6 +67,8 @@ file adattati e altre attribuzioni sono raccolti in
 
 - Catalogo iniziale di **126 canali**, con Rai, Rai/TGR, Mediaset, La7, Sky,
   WBD/Discovery e le altre dirette supportate dalla lista WLTV.
+- **1.310 radio italiane**, con catalogo aggiornabile, ricerca per nome e città,
+  preferite, recenti e ascolto mentre navighi nell’app.
 - Riproduzione di flussi HLS e DASH, con supporto Widevine quando richiesto
   dall’emittente e disponibile nel runtime.
 - Player integrato, schermo intero e mini-player per continuare a guardare
@@ -101,6 +107,18 @@ Il catalogo viene controllato ogni 24 ore. Da **Impostazioni** puoi richiedere
 manualmente l’aggiornamento della lista e della guida. Se il servizio richiede
 una pausa o restituisce un errore, i dati già scaricati restano disponibili.
 Non tutti i canali hanno una programmazione presente nella guida.
+
+## Radio
+
+Apri **Radio** nella barra laterale. La ricerca trova stazioni e città; i filtri
+**Preferite** e **Recenti** raccolgono quelle che vuoi ritrovare. Il catalogo si
+aggiorna ogni giorno e mantiene una copia locale quando la fonte non risponde.
+
+Il player gestisce MP3, AAC e HLS. Mostra il titolo del brano quando la stazione
+lo fornisce e tenta di riconnettersi in caso di interruzione, fino a tre volte.
+Pausa, cambio stazione e chiusura del player annullano la riconnessione.
+L’ascolto continua nel mini-player mentre l’app resta aperta. La disponibilità
+delle singole radio dipende dalle sorgenti. Dettagli in [RADIO.md](docs/RADIO.md).
 
 ## Durante la diretta
 

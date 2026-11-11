@@ -1,6 +1,8 @@
 import { api, apiFetch, bounded } from './api';
 import { createStore } from './store';
 import { prepareWidevine, widevineMessage } from './widevine';
+import { RecoveryController } from './recovery';
+import { isRadio } from './domain';
 import type { ShakaPlayer } from './runtime';
 import type { Channel, PlaybackPhase, PlaybackState, Preferences, Session } from './types';
 
@@ -12,6 +14,7 @@ interface Dependencies {
     stopped(): void;
 }
 const initial: PlaybackState = {
+    nowPlaying: '',
     current: null,
     channel: null,
     phase: 'idle',
@@ -43,6 +46,30 @@ export class PlaybackController {
     private playedId: string | null = null;
     private loadController: AbortController | null = null;
     private sampleTimer?: ReturnType<typeof setInterval>;
+    private wantsToPlay = false;
+    private needsReload = false;
+    private readonly recovery = new RecoveryController({
+        retry: () => {
+            const id = this.store.get().current;
+            if (id && this.wantsToPlay) void this.load(id, true);
+        },
+        waiting: (attempt, offline) => {
+            this.needsReload = true;
+            this.phase(
+                'buffering',
+                offline ? 'Connessione assente.' : `Riconnetto… Tentativo ${attempt} di 3`,
+                offline
+                    ? 'Riprendo quando torna la rete. Puoi mettere in pausa o scegliere un’altra emittente.'
+                    : 'Sto riaprendo la sorgente.',
+            );
+        },
+        exhausted: () =>
+            this.phase(
+                'error',
+                'La sorgente non risponde.',
+                'Premi Riprova oppure scegli un’altra emittente.',
+            ),
+    });
 
     constructor(private readonly deps: Dependencies) {}
 
@@ -53,9 +80,10 @@ export class PlaybackController {
             'playing',
             () => {
                 if (this.pending || !this.session) return;
+                this.recovery.playing();
                 this.store.set({
                     phase: 'playing',
-                    hasPicture: true,
+                    hasPicture: !isRadio(this.store.get().channel),
                     paused: false,
                     widevine: null,
                 });
@@ -70,6 +98,7 @@ export class PlaybackController {
         video.addEventListener(
             'pause',
             () => {
+                if (this.pending) return;
                 this.store.set({
                     paused: true,
                     ...(!this.pending && this.store.get().phase === 'playing'
@@ -79,6 +108,35 @@ export class PlaybackController {
             },
             { signal: events.signal },
         );
+        video.addEventListener(
+            'waiting',
+            () => {
+                if (!this.pending && this.wantsToPlay) {
+                    this.recovery.buffering();
+                    this.phase('buffering', 'Riprendiamo il filo.', 'Sto recuperando la sorgente…');
+                }
+            },
+            { signal: events.signal },
+        );
+        video.addEventListener(
+            'error',
+            () => {
+                if (!this.pending && this.session?.stream.continuous && this.wantsToPlay)
+                    this.recovery.failed(video.error?.code !== 3 && video.error?.code !== 4);
+            },
+            { signal: events.signal },
+        );
+        video.addEventListener(
+            'ended',
+            () => {
+                if (!this.pending && this.wantsToPlay) this.recovery.failed(true);
+            },
+            { signal: events.signal },
+        );
+        const online = () => this.networkChanged(true);
+        const offline = () => this.networkChanged(false);
+        window.addEventListener('online', online);
+        window.addEventListener('offline', offline);
         video.addEventListener(
             'encrypted',
             () => this.emit({ kind: 'encrypted', encrypted: true, encrypted_events: 1 }),
@@ -92,6 +150,9 @@ export class PlaybackController {
         this.applyPreferences();
         return () => {
             events.abort();
+            this.recovery.stop();
+            window.removeEventListener('online', online);
+            window.removeEventListener('offline', offline);
             ++this.generation;
             this.loadController?.abort();
             clearInterval(this.sampleTimer);
@@ -182,24 +243,44 @@ export class PlaybackController {
                 manifest: { retryParameters: { maxAttempts: 3, baseDelay: 800, backoffFactor: 2 } },
             });
             player.addEventListener('error', (event) => {
+                if (this.session?.stream.continuous) return;
                 const error = event.detail as { code?: number } | undefined;
                 if (this.pending || [7000, 7001].includes(error?.code || 0)) return;
                 this.emit({ kind: 'error', ...window.LumePlayback.sanitizedError(error) });
-                this.phase(
-                    'error',
-                    'La diretta si è interrotta.',
-                    'Controlla la connessione e riprova. Puoi anche scegliere un altro canale.',
-                );
+                this.recovery.failed(!!error?.code && error.code >= 1000 && error.code < 2000);
             });
             player.addEventListener('buffering', (event) => {
-                if (event.buffering && this.store.get().phase === 'playing' && !this.pending)
+                if (event.buffering && this.store.get().phase === 'playing' && !this.pending) {
+                    this.recovery.buffering();
                     this.phase(
                         'buffering',
                         'Riprendiamo il filo.',
                         'Stiamo recuperando la diretta…',
                     );
-                else if (!event.buffering && this.store.get().phase === 'buffering')
+                } else if (
+                    !event.buffering &&
+                    this.store.get().phase === 'buffering' &&
+                    !this.pending &&
+                    !this.needsReload
+                ) {
+                    this.recovery.playing();
                     this.phase('playing');
+                }
+            });
+            player.addEventListener('metadata', (event) => {
+                if (!isRadio(this.store.get().channel)) return;
+                const data = event as unknown as {
+                    payload?:
+                        | { key?: string; id?: string; data?: unknown }
+                        | { key?: string; id?: string; data?: unknown }[];
+                };
+                const frame = Array.isArray(data.payload)
+                    ? data.payload.find((f) => (f.key || f.id) === 'TIT2')
+                    : data.payload;
+                if (frame && (frame.key || frame.id) === 'TIT2' && typeof frame.data === 'string')
+                    this.store.set({
+                        nowPlaying: frame.data.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 300),
+                    });
             });
             player.addEventListener('keystatuschanged', () =>
                 this.emit({
@@ -232,6 +313,10 @@ export class PlaybackController {
         });
     }
     private updateTracks() {
+        if (this.session?.stream.continuous) {
+            this.store.set({ height: 0, audioTracks: [], textTracks: [] });
+            return;
+        }
         if (!this.player) return;
         const variants = this.player.getVariantTracks();
         const active = variants.find((t) => t.active);
@@ -249,16 +334,22 @@ export class PlaybackController {
         });
     }
 
-    async load(id: string) {
+    async load(id: string, automatic = false) {
         const channel = this.deps.channel(id);
         if (!channel || !this.video) return;
         if (
+            !automatic &&
             id === this.store.get().current &&
             ['playing', 'paused', 'buffering'].includes(this.store.get().phase)
         ) {
             this.deps.watch();
             return;
         }
+        if (!automatic) {
+            this.recovery.start();
+            this.wantsToPlay = true;
+        }
+        this.needsReload = false;
         const generation = ++this.generation;
         let pendingSession: Session | null = null;
         this.loadController?.abort();
@@ -273,6 +364,8 @@ export class PlaybackController {
             widevine: null,
             setupElapsed: 0,
             height: 0,
+            nowPlaying: '',
+            paused: !this.wantsToPlay,
         });
         this.video.pause();
         this.deps.watch();
@@ -295,6 +388,8 @@ export class PlaybackController {
             await bounded(player.unload(), 10_000, signal);
             if (generation !== this.generation) return;
             this.session = session;
+            this.video.removeAttribute('src');
+            this.video.load();
             let capabilities = await bounded(
                 window.LumePlayback.probeCapabilities(this.video),
                 12_000,
@@ -302,7 +397,10 @@ export class PlaybackController {
             );
             if (generation !== this.generation) return;
             this.emit({ kind: 'capabilities', ...capabilities });
-            if (!capabilities.avc_mse_supported || !capabilities.aac_mse_supported)
+            if (
+                !isRadio(channel) &&
+                (!capabilities.avc_mse_supported || !capabilities.aac_mse_supported)
+            )
                 throw { code: 'codec_unavailable' };
             if (session.stream.drm && !capabilities.widevine_available) {
                 this.emit({ kind: 'drm_setup', status: 'waiting' });
@@ -344,25 +442,35 @@ export class PlaybackController {
                 },
             });
             this.applyPreferences();
-            await bounded(
-                player.load(session.stream.url, undefined, session.stream.mime_type || undefined),
-                45_000,
-                signal,
-            );
+            if (session.stream.continuous) this.video.src = session.stream.url;
+            else
+                await bounded(
+                    player.load(
+                        session.stream.url,
+                        undefined,
+                        session.stream.mime_type || undefined,
+                    ),
+                    45_000,
+                    signal,
+                );
             if (generation !== this.generation) return;
             this.emit({ kind: 'loaded', drm_configured: !!session.stream.drm });
             this.pending = false;
             this.applyPreferences();
-            await this.resume();
+            if (this.wantsToPlay) await this.resume(false);
+            else this.phase('paused');
             if (generation !== this.generation) return;
             this.updateTracks();
             this.sampleTimer = setInterval(() => {
                 if (this.session && this.video && this.video.readyState >= 2)
                     this.emit(this.sample());
+                if (isRadio(channel)) void this.pollRadio(generation, session.playback_id);
             }, 2000);
         } catch (error) {
             const failure = error as { name?: string; code?: string };
             if (generation !== this.generation || failure.name === 'AbortError') return;
+            if (String(failure.code).startsWith('widevine') || failure.code === 'codec_unavailable')
+                this.recovery.stop();
             ++this.generation;
             this.loadController?.abort();
             this.pending = false;
@@ -395,15 +503,43 @@ export class PlaybackController {
                     'Questo formato non è disponibile.',
                     'Il motore video di questa versione non supporta il formato del canale.',
                 );
-            else
-                this.phase(
-                    'error',
-                    'Questo canale si fa attendere.',
-                    'La sorgente non è al momento disponibile. Riprova tra poco o scegli un altro canale.',
-                );
+            else this.recovery.failed(true);
         }
     }
-    async resume() {
+    private async pollRadio(generation: number, playbackId: string) {
+        try {
+            const status = await api<{ playback_id?: string; audio?: { now_playing?: string } }>(
+                '/api/radio/status',
+            );
+            if (
+                generation === this.generation &&
+                status.playback_id === playbackId &&
+                typeof status.audio?.now_playing === 'string'
+            )
+                this.store.set({ nowPlaying: status.audio.now_playing });
+        } catch {
+            /* A metadata failure does not stop the radio. */
+        }
+    }
+    networkChanged(online: boolean) {
+        this.recovery.networkChanged(online);
+    }
+    async resume(manual = true) {
+        if (manual) {
+            const reload =
+                this.needsReload ||
+                this.store.get().phase === 'error' ||
+                (!!this.session?.stream.continuous && this.store.get().phase === 'paused');
+            this.wantsToPlay = true;
+            this.recovery.start();
+            if (reload) {
+                const id = this.store.get().current;
+                if (id) {
+                    await this.load(id, true);
+                    return;
+                }
+            }
+        }
         try {
             await this.video?.play();
         } catch {
@@ -415,8 +551,13 @@ export class PlaybackController {
         }
     }
     togglePause() {
-        if (this.video?.paused) void this.resume();
-        else this.video?.pause();
+        if (!this.wantsToPlay || this.store.get().phase === 'paused') void this.resume();
+        else {
+            this.wantsToPlay = false;
+            this.recovery.stop();
+            this.video?.pause();
+            this.store.set({ paused: true, phase: 'paused' });
+        }
     }
     volume(volume: number, muted: boolean) {
         if (this.video) {
@@ -447,6 +588,8 @@ export class PlaybackController {
         }
     }
     async stop() {
+        this.wantsToPlay = false;
+        this.recovery.stop();
         const generation = ++this.generation;
         const playbackId = this.session?.playback_id;
         this.loadController?.abort();
@@ -455,6 +598,8 @@ export class PlaybackController {
         void api('/api/stop', { playback_id: playbackId || null }).catch(() => {});
         this.video?.pause();
         await this.player?.unload().catch(() => {});
+        this.video?.removeAttribute('src');
+        this.video?.load();
         if (generation !== this.generation) return;
         this.session = null;
         this.store.set({
