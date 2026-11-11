@@ -8,7 +8,7 @@
 <h1 align="center">La TV, fatta semplice.</h1>
 <p align="center">Le dirette italiane sul tuo computer, con un’interfaccia essenziale e il player integrato.</p>
 <p align="center">
-  <a href="https://github.com/pjor94/LumeTV-Desktop/releases/latest">Scarica Lume TV</a> ·
+  <a href="#download">Scarica Lume TV</a> ·
   <a href="#compilazione">Compila dai sorgenti</a> ·
   <a href="docs/RELEASE.md">Pacchetti e release</a> ·
   <a href="docs/STATUS.md">Stato del progetto</a> ·
@@ -17,11 +17,25 @@
   <a href="https://github.com/pjor94/LumeTV">Versione Android TV</a>
 </p>
 
+<a id="download"></a>
+
+> [!TIP]
+> ### Scarica Lume TV 0.2.0
+>
+> | Sistema | Download |
+> | --- | --- |
+> | macOS 13+ · Apple Silicon | [Scarica DMG](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-arm64.dmg) · [ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-arm64.zip) |
+> | macOS 13+ · Intel | [Scarica DMG](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-x64.dmg) · [ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-x64.zip) |
+> | Windows x64 | [Scarica ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-windows-x64.zip) |
+> | Linux x64 / Ubuntu 24.04 | [Scarica DEB](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-linux-x64.deb) · [tar.gz](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-linux-x64.tar.gz) |
+>
+> [Apri la release: novità, sorgenti e checksum](https://github.com/pjor94/LumeTV-Desktop/releases/tag/v0.2.0) · [Tutte le release](https://github.com/pjor94/LumeTV-Desktop/releases) · [Istruzioni di installazione](#distribuzione-e-installazione)
+
 > [!NOTE]
 > Lume TV Desktop è in sviluppo. Le prove di riproduzione disponibili riguardano
 > **macOS Apple Silicon**; il collaudo video su Mac Intel, Windows e Linux resta aperto.
 >
-> [Compila e avvia l’app](#compilazione) · [Verifiche e limiti attuali](docs/STATUS.md)
+> [Installazione](#distribuzione-e-installazione) · [Verifiche e limiti attuali](docs/STATUS.md)
 
 ![Il catalogo di Lume TV nella finestra macOS](docs/images/catalog-macos.jpg)
 
@@ -134,18 +148,20 @@ senza riaprire il flusso.
 
 ## Distribuzione e installazione
 
-Scarica il pacchetto del tuo sistema da
-[Release](https://github.com/pjor94/LumeTV-Desktop/releases/latest).
+Scarica il pacchetto per il tuo computer dalla [sezione Download](#download).
 Ogni versione contiene l’app completa, il runtime CEF, i sorgenti corrispondenti
 e i checksum. Le build dei singoli commit restano disponibili negli **Artifacts**
 di [GitHub Actions](https://github.com/pjor94/LumeTV-Desktop/actions).
 
-| Sistema | Pacchetto | Installazione |
-| --- | --- | --- |
-| macOS Apple Silicon | DMG o ZIP `macos-arm64` | Copia `Lume TV.app` in Applicazioni |
-| macOS Intel | DMG o ZIP `macos-x64` | Copia `Lume TV.app` in Applicazioni |
-| Windows x64 | ZIP `windows-x64` | Estrai tutta la cartella e avvia `LumeTV.exe` |
-| Linux x64 / Ubuntu 24.04 | DEB o tar.gz `linux-x64` | Installa il DEB con il gestore pacchetti, oppure estrai il tar.gz e avvia `AppRun` |
+| Sistema | Installazione |
+| --- | --- |
+| macOS | Apri il DMG e copia `Lume TV.app` in Applicazioni, oppure estrai lo ZIP |
+| Windows x64 | Estrai tutta la cartella ZIP e avvia `LumeTV.exe` |
+| Linux x64 / Ubuntu 24.04 | Installa il DEB con il gestore pacchetti, oppure estrai il tar.gz e avvia `AppRun` |
+
+Se usi la **0.1.0**, chiudi Lume e installa manualmente la **0.2.0**. Preferiti e
+impostazioni rimangono nella cartella dati dell’utente. Dalla 0.2.0 puoi controllare
+e scaricare gli aggiornamenti nelle Impostazioni dell’app.
 
 I tag ordinari, come `v0.2.0`, producono una release normale. I tag con suffisso
 `beta` o `rc` producono un’anteprima. Le istruzioni complete sono in
@@ -197,9 +213,8 @@ gestore pacchetti; se la cartella dell’app non è scrivibile viene aperto il
 pacchetto per l’installazione manuale. Per impostazione iniziale Lume propone
 le release ordinarie. Puoi includere le anteprime attivando **Versioni di prova**.
 
-La release 0.1.0 già pubblicata non ha questo controllo: occorre installare
-manualmente la prima build che lo include. Catalogo, guida TV e Widevine si
-aggiornano separatamente. Dettagli in [Aggiornamenti](docs/UPDATES.md).
+Catalogo, guida TV e Widevine si aggiornano separatamente. Dettagli in
+[Aggiornamenti](docs/UPDATES.md).
 
 ## Tastiera
 
