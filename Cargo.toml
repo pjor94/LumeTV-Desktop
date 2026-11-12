@@ -16,7 +16,7 @@ exclude = ["vendor/download-cef"]
 resolver = "2"
 
 [workspace.dependencies]
-cef = { version = "=150.2.1", default-features = false, features = ["sandbox", "build-util"] }
+cef = { version = "=156.4.0", default-features = false, features = ["sandbox", "build-util"] }
 
 [features]
 default = []
