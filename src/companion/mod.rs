@@ -175,11 +175,11 @@ fn proof(
 fn message(code: &str) -> String {
     match code {"pairing_failed"=>"Il codice di associazione non corrisponde alla TV.","pairing_closed"|"pairing_expired"=>"Il codice è scaduto. Riapri l’associazione sulla TV.","pairing_busy"|"handover_pending"=>"La TV sta completando un’altra associazione.","slow_down"=>"Troppi tentativi. Attendi un minuto e riprova.","pairing_denied"=>"Associazione rifiutata sulla TV.","not_authorized"=>"Associazione revocata. Associa di nuovo la TV.","watch_missing"=>"Il contenuto non è presente sulla TV. Per una lista personale, invia prima la lista alla TV.","watch_ambiguous"=>"Più contenuti sulla TV corrispondono a questa voce. Controlla le liste sulla TV.","watch_tv_changed"|"playback_changed"|"playback_changing"=>"La riproduzione sulla TV è cambiata. Aggiorna e riprova.","watch_not_seekable"=>"La TV non può riprendere questo video dal punto salvato.","watch_playback_failed"=>"La TV ha trovato il contenuto ma non riesce a riprodurlo.","tracks_changed"=>"Le tracce sulla TV sono cambiate. Aggiorna e riprova.","watch_timeout"=>"La TV non ha confermato l’avvio in tempo. Verifica la riproduzione sulla TV.","watch_unsupported"=>"Aggiorna Lume sulla TV per usare questa funzione.","playlist_busy"|"playlist_importing"=>"La TV sta già importando una lista.",_=>"La TV non può completare l’operazione. Aggiorna lo stato e riprova."}.into()
 }
-fn private(path: &Path) -> Result<()> {
+fn private(_path: &Path) -> Result<()> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
+        fs::set_permissions(_path, fs::Permissions::from_mode(0o600))?;
     }
     Ok(())
 }

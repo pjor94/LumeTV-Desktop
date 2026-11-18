@@ -108,20 +108,16 @@ fn launch_args(profile: &Path, url: &str, headless: bool) -> Vec<OsString> {
     args
 }
 
-fn is_executable(path: &Path) -> bool {
-    if !path.is_file() {
-        return false;
-    }
+pub(crate) fn is_executable(path: &Path) -> bool {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         path.metadata()
-            .map(|metadata| metadata.permissions().mode() & 0o111 != 0)
-            .unwrap_or(false)
+            .is_ok_and(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
     }
     #[cfg(not(unix))]
     {
-        true
+        path.is_file()
     }
 }
 

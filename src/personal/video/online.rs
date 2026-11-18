@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Optional TMDB enrichment. This transport never receives playlist credentials.
 use super::*;
+use crate::personal::store::private_file;
 use anyhow::anyhow;
 use reqwest::{blocking::Client, redirect::Policy};
 use std::{
@@ -51,14 +52,6 @@ struct Details {
     poster: String,
     backdrop: String,
 }
-fn private_file(path: &std::path::Path) -> Result<()> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
-    }
-    Ok(())
-}
 fn client() -> Result<Client> {
     Ok(Client::builder()
         .no_proxy()
@@ -105,11 +98,9 @@ fn similarity(a: &str, b: &str) -> u32 {
         .split_whitespace()
         .collect::<std::collections::BTreeSet<_>>();
     let union = a.union(&b).count();
-    if union == 0 {
-        0
-    } else {
-        (a.intersection(&b).count() * 30 / union) as u32
-    }
+    (a.intersection(&b).count() * 30)
+        .checked_div(union)
+        .unwrap_or_default() as u32
 }
 fn text(value: &Value, key: &str, limit: usize) -> String {
     TAG.replace_all(value[key].as_str().unwrap_or(""), "")

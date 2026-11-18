@@ -95,7 +95,7 @@ impl RuntimeSelection {
             Backend::Browser => browser::detect(self.browser.as_deref())?,
             Backend::Cef => {
                 if let Some(explicit) = &self.cef_executable {
-                    if !is_executable(explicit) {
+                    if !browser::is_executable(explicit) {
                         bail!("The specified embedded CEF executable is unavailable");
                     }
                     explicit.clone()
@@ -104,7 +104,7 @@ impl RuntimeSelection {
                     let working = env::current_dir().context("Cannot locate working directory")?;
                     cef_candidates(&current, &working)
                         .into_iter()
-                        .find(|candidate| is_executable(candidate))
+                        .find(|candidate| browser::is_executable(candidate))
                         .context("Embedded CEF runtime not found; build the bundled lume-cef runtime or specify --cef-executable")?
                 }
             }
@@ -261,22 +261,6 @@ fn copy_build_metadata(sidecar: &Value, metadata: &mut Value) {
         .as_str()
         .filter(|value| ["stock", "custom"].contains(value))
         .unwrap_or("unknown"));
-}
-
-fn is_executable(path: &Path) -> bool {
-    if !path.is_file() {
-        return false;
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        path.metadata()
-            .is_ok_and(|m| m.permissions().mode() & 0o111 != 0)
-    }
-    #[cfg(not(unix))]
-    {
-        true
-    }
 }
 
 fn cef_candidates(current_executable: &Path, working_directory: &Path) -> Vec<PathBuf> {

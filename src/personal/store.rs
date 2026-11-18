@@ -122,11 +122,11 @@ fn private_directory(path: &Path) -> Result<()> {
     }
     Ok(())
 }
-fn private_file(path: &Path) -> Result<()> {
+pub(super) fn private_file(_path: &Path) -> Result<()> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
+        fs::set_permissions(_path, fs::Permissions::from_mode(0o600))?;
     }
     Ok(())
 }
