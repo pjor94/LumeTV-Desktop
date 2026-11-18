@@ -57,6 +57,7 @@ SECRET_PATTERNS = {
     ),
     "AWS access key": re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b"),
     "Slack credential": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{24,}\b"),
+    "bearer token": re.compile(r"\beyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{20,}\b"),
 }
 LINK = re.compile(r"!?\[[^\]\n]*\]\(([^\n]+?)\)")
 IGNORED_SAMPLES = (
@@ -66,6 +67,7 @@ IGNORED_SAMPLES = (
     "certs/signing.p12", "certs/signing.key", "WidevineCdm/manifest.json",
     "nested/libwidevinecdm.dylib", "dist/Lume TV.app/Contents/Info.plist",
     "release-keys/updates-ed25519.pem",
+    "video-settings.json", ".video-settings.tmp",
 )
 
 
@@ -78,7 +80,7 @@ def forbidden_path(name: str) -> bool:
         or any(part in PRIVATE_DIRS or part.endswith(".app") for part in path.parts)
         or path.parts[0] in BUILD_DIRS
         or path.suffix.lower() in PRIVATE_SUFFIXES
-        or path.name in {".DS_Store", "Thumbs.db"}
+        or path.name in {".DS_Store", "Thumbs.db", "video-settings.json", ".video-settings.tmp"}
         or path.name.startswith("._")
         or (path.name.startswith(".env") and not path.name.endswith(".example"))
         or path.name.lower().startswith("libwidevinecdm.")

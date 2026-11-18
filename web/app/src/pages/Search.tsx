@@ -1,9 +1,13 @@
+import { personalizedChannels } from '../domain';
 import { app, showProgramme } from '../app';
 import { date, filterChannels, range, schedule, searchable, time } from '../domain';
 import { ChannelCard, EmptyState, Heading, StationLogo } from '../components/common';
 
 export function Search() {
-    const state = app.get();
+    const state = {
+        ...app.get(),
+        channels: personalizedChannels(app.get().channels, app.get().preferences),
+    };
     const channels = filterChannels(state.channels, {
         query: state.query,
         programmes: state.guide.programmes,

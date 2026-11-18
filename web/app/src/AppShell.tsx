@@ -28,8 +28,11 @@ import { Radio } from './pages/Radio';
 import { isRadio } from './domain';
 import type { Route } from './types';
 import { connectUpdates, updates } from './updates';
+import { connectLibrary, library, librarySelection } from './personal';
+import { Playlists } from './pages/Playlists';
+import { Videos } from './pages/Videos';
 
-const routes: [Route, string, string][] = [
+const baseRoutes: [Route, string, string][] = [
     ['channels', 'Canali', 'grid'],
     ['discover', 'Cosa guardare', 'compass'],
     ['guide', 'Guida TV', 'guide'],
@@ -38,13 +41,28 @@ const routes: [Route, string, string][] = [
 ];
 export function App() {
     const state = useStore(app);
-    const favoriteCount = state.channels.filter(
-        (c) => !isRadio(c) && state.preferences.favorites.includes(c.id),
-    ).length;
+    const personal = useStore(library);
+    const selection = useStore(librarySelection);
+    const routes: [Route, string, string][] = [
+        ...baseRoutes,
+        ...(personal.sources.some(
+            (s) => s.enabled && (s.has_vod || s.report.count > s.report.radio),
+        )
+            ? [['videos', 'Video', 'play'] as [Route, string, string]]
+            : []),
+    ];
+    const page = state.page === 'watch' ? state.previousPage : state.page;
+    const personalSearch =
+        page === 'videos' ||
+        (['channels', 'favorites'].includes(page) && selection.source !== 'builtin');
+    const favoriteCount =
+        state.channels.filter((c) => !isRadio(c) && state.preferences.favorites.includes(c.id))
+            .length + personal.favoriteCount;
     const updateStatus = useStore(updates);
     const notifiedUpdate = useRef('');
     const current = useStoreValue(playback.store, (state) => state.current);
     useEffect(connectUpdates, []);
+    useEffect(connectLibrary, []);
     useEffect(() => {
         const version = updateStatus.available_version;
         if (version && version !== notifiedUpdate.current && !current && !state.dialogOpen) {
@@ -58,7 +76,8 @@ export function App() {
     const channel = playback.store.get().channel;
     const search = useRef<HTMLInputElement>(null);
     const scroll = useRef<HTMLDivElement>(null);
-    const effectivePage = state.query && state.page !== 'radio' ? 'search' : state.page;
+    const effectivePage =
+        state.query && state.page !== 'radio' && !personalSearch ? 'search' : state.page;
     useLayoutEffect(() => {
         document.body.dataset.page = effectivePage;
         const dock = document.getElementById('player-dock');
@@ -138,7 +157,6 @@ export function App() {
         document.addEventListener('keydown', keyboard);
         return () => document.removeEventListener('keydown', keyboard);
     }, []);
-    const page = state.page === 'watch' ? state.previousPage : state.page;
     const reminders = state.preferences.reminders.filter((r) => r.start > state.now).length;
     return (
         <>
@@ -295,7 +313,7 @@ export function App() {
                             </div>
                         ) : page === 'radio' ? (
                             <Radio />
-                        ) : state.query ? (
+                        ) : state.query && !personalSearch ? (
                             <Search />
                         ) : page === 'discover' ? (
                             <Discovery />
@@ -303,6 +321,10 @@ export function App() {
                             <GuidePage />
                         ) : page === 'settings' ? (
                             <Settings />
+                        ) : page === 'playlists' ? (
+                            <Playlists />
+                        ) : page === 'videos' ? (
+                            <Videos />
                         ) : (
                             <Channels favoritesOnly={page === 'favorites'} />
                         )}

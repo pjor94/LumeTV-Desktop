@@ -1,3 +1,4 @@
+import { watchOnTv } from '../companion';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { app, navigate, playback, savePreferences, toast } from '../app';
 import { useStore } from '../store';
@@ -5,6 +6,11 @@ import { motion } from '../motion';
 import { QualityOptions } from '../pages/Settings';
 import { Icon, StationLogo } from './common';
 import type { Quality } from '../types';
+import { VideoNextEpisode } from '../pages/Videos';
+const elapsed = (seconds: number) => {
+    seconds = Math.max(0, Math.floor(seconds));
+    return `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}:` : ''}${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+};
 
 export async function fullscreen() {
     try {
@@ -29,6 +35,7 @@ export function Player() {
     const options = useRef<HTMLDivElement>(null);
     const [expanded, setExpanded] = useState(false);
     const [controlsHidden, setControlsHidden] = useState(false);
+    const [seek, setSeek] = useState<number | null>(null);
     const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const volumeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const pendingVolume = useRef<{ volume: number; muted: boolean } | null>(null);
@@ -79,7 +86,15 @@ export function Player() {
                 ref={video}
                 id="video"
                 playsInline
-                aria-label={radio ? 'Diretta radio' : 'Diretta TV'}
+                aria-label={
+                    state.mode === 'vod'
+                        ? 'Video'
+                        : state.mode === 'archive'
+                          ? 'Archivio TV'
+                          : radio
+                            ? 'Diretta radio'
+                            : 'Diretta TV'
+                }
                 onDoubleClick={() => {
                     if (!radio) void fullscreen();
                 }}
@@ -145,40 +160,111 @@ export function Player() {
                     onClick={() => void playback.resume()}
                 >
                     <Icon name="play" />
-                    Avvia la diretta
+                    {state.mode === 'live' ? 'Avvia la diretta' : 'Avvia il video'}
                 </button>
             </div>
             <div className="player-top">
                 <span className="live-badge">
-                    <span /> IN DIRETTA
+                    {state.mode === 'live' && <span />}{' '}
+                    {state.mode === 'vod'
+                        ? 'VIDEO'
+                        : state.mode === 'archive'
+                          ? 'ARCHIVIO'
+                          : 'IN DIRETTA'}
                 </span>
                 <span id="player-channel-label">{state.channel?.name}</span>
                 <button
                     className="icon-button player-close"
                     id="player-close"
-                    aria-label="Chiudi la diretta"
-                    title="Chiudi la diretta"
+                    aria-label={state.mode === 'live' ? 'Chiudi la diretta' : 'Chiudi il video'}
+                    title={state.mode === 'live' ? 'Chiudi la diretta' : 'Chiudi il video'}
                     onClick={() => void playback.stop()}
                 >
                     <Icon name="close" />
                 </button>
             </div>
             <div className="player-controls" id="player-controls">
-                <div className="live-track">
-                    <span />
-                    <button
-                        id="go-live"
-                        title="Torna alla diretta"
-                        onClick={() => playback.goLive()}
-                    >
-                        DIRETTA <i />
-                    </button>
-                </div>
+                {state.mode === 'live' ? (
+                    <div className="live-track">
+                        <span />
+                        <button
+                            id="go-live"
+                            title="Torna alla diretta"
+                            onClick={() => playback.goLive()}
+                        >
+                            DIRETTA <i />
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <div className="video-timeline">
+                            <time>{elapsed(seek ?? state.position)}</time>
+                            <input
+                                type="range"
+                                min="0"
+                                max={state.duration || 1}
+                                step="1"
+                                value={Math.min(seek ?? state.position, state.duration || 0)}
+                                disabled={!state.seekable || !state.duration}
+                                aria-label="Posizione del video"
+                                aria-valuetext={`${elapsed(seek ?? state.position)} di ${elapsed(state.duration)}`}
+                                onChange={(e) => setSeek(Number(e.target.value))}
+                                onPointerUp={(e) => {
+                                    playback.seek(Number(e.currentTarget.value));
+                                    setSeek(null);
+                                }}
+                                onKeyUp={(e) => {
+                                    if (
+                                        [
+                                            'ArrowLeft',
+                                            'ArrowRight',
+                                            'Home',
+                                            'End',
+                                            'PageUp',
+                                            'PageDown',
+                                        ].includes(e.key)
+                                    ) {
+                                        playback.seek(Number(e.currentTarget.value));
+                                        setSeek(null);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (seek !== null) {
+                                        playback.seek(seek);
+                                        setSeek(null);
+                                    }
+                                }}
+                            />
+                            <time>{elapsed(state.duration)}</time>
+                        </div>
+                        <div className="video-seek-actions">
+                            <button disabled={!state.seekable} onClick={() => playback.seekBy(-10)}>
+                                −10 secondi
+                            </button>
+                            <button disabled={!state.seekable} onClick={() => playback.seekBy(30)}>
+                                +30 secondi
+                            </button>
+                            <button onClick={() => playback.restart()}>Dall’inizio</button>
+                            <VideoNextEpisode />
+                            {state.mode === 'archive' && (
+                                <button onClick={() => playback.goLive()}>
+                                    Torna alla diretta
+                                </button>
+                            )}
+                        </div>
+                    </>
+                )}
                 <div className="control-row">
                     <button
                         className="icon-button"
                         id="play-pause"
-                        aria-label={state.paused ? 'Riprendi' : 'Pausa'}
+                        aria-label={
+                            state.ended
+                                ? 'Riproduci dall’inizio'
+                                : state.paused
+                                  ? 'Riprendi'
+                                  : 'Pausa'
+                        }
                         title={`${state.paused ? 'Riprendi' : 'Pausa'} · Spazio`}
                         onClick={() => playback.togglePause()}
                     >
@@ -219,6 +305,22 @@ export function Player() {
                     <span id="video-quality" className="video-quality">
                         {state.height ? `${state.height}p` : ''}
                     </span>
+                    {state.mode !== 'archive' && (
+                        <button
+                            className="icon-button"
+                            aria-label="Guarda sulla TV"
+                            title="Guarda sulla TV"
+                            onClick={() => {
+                                if (state.current)
+                                    watchOnTv(
+                                        state.current,
+                                        state.mode === 'vod' ? state.position : 0,
+                                    );
+                            }}
+                        >
+                            <Icon name="tv" />
+                        </button>
+                    )}
                     <button
                         className="icon-button"
                         id="player-settings"

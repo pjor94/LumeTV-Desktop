@@ -47,6 +47,17 @@ Guida, ricerca e preferiti aiutano a ritrovare ciò che vuoi guardare.
 Il backend è scritto in Rust, l’interfaccia in React e TypeScript. Il player usa
 CEF incorporato e Shaka Player: puoi avviare Lume senza installare Chrome.
 
+## Novità della 0.3.0
+
+Importa liste M3U da URL o file e organizzale per gruppi e preferiti. Per i
+canali senza guida o logo personale, Lume cerca i dati nel proprio catalogo
+e poi in EPGShare IT1. La sezione **Video** raccoglie film e serie con ripresa,
+stagioni, episodi e informazioni TMDB facoltative.
+
+I backup cifrati sono compatibili con Android. Puoi anche associare una TV
+con Lume per usare il telecomando e inviare contenuti o liste. Le [note di
+versione](CHANGELOG.md) descrivono tutte le modifiche alla guida e al player.
+
 ## Novità della 0.2.0
 
 L’interfaccia passa a React mantenendo lo stile di Lume. Il player resta attivo
@@ -91,6 +102,13 @@ file adattati e altre attribuzioni sono raccolti in
 - Ricerca per canale e programma, filtri per emittente e categoria, preferiti
   e canali visti di recente.
 - Guida TV con programmi, orari e dettagli quando forniti dal palinsesto.
+- Liste personali M3U da URL o file, con anteprima, gruppi, ricerca e preferiti.
+- Guida XMLTV personale, associazioni manuali e archivio quando fornito dalla sorgente.
+- Guida e loghi Lume automatici per le liste che non li dichiarano, cercando nel feed EPG completo anche oltre i canali del catalogo.
+- EPGShare IT1 completa guida e loghi ancora assenti dopo la ricerca nei dati Lume, senza sostituire i dati della lista personale.
+- Libreria Video con film, serie, stagioni, riprese, salvati e informazioni TMDB facoltative.
+- Backup cifrati compatibili con Android e ripristino selettivo, con conservazione dei dati esistenti.
+- Collegamento alle TV con Lume Android: associazione, telecomando, invio di contenuti e liste.
 - **Cosa guardare**: programmi Ora/Tra poco/Stasera, ricerca e filtro preferiti.
 - Promemoria locali per i programmi futuri mentre l’app è aperta.
 - Scelta della qualità, volume, audio e sottotitoli quando disponibili.
@@ -134,6 +152,19 @@ lo fornisce e tenta di riconnettersi in caso di interruzione, fino a tre volte.
 Pausa, cambio stazione e chiusura del player annullano la riconnessione.
 L’ascolto continua nel mini-player mentre l’app resta aperta. La disponibilità
 delle singole radio dipende dalle sorgenti. Dettagli in [RADIO.md](docs/RADIO.md).
+
+## Le mie liste
+
+Apri **Impostazioni → Le mie liste → Gestisci liste** per importare una lista
+da indirizzo o file. Controlla l’anteprima e premi **Importa lista**. I selettori
+in Canali, Radio e Guida TV permettono di aprire le sorgenti personali;
+**Video** raccoglie film e serie delle liste TV personali, con stagioni, episodi,
+Continua a guardare, salvati e aggiunti di recente. Le informazioni TMDB sono
+facoltative e si attivano dalle opzioni della sezione.
+
+Puoi configurare lettura, gruppi, header, cookie, guida e archivio per sorgente.
+La guida mostra i comandi per rivedere un programma quando il servizio lo consente.
+Formati, limiti e dettagli sono in [Liste personali](docs/PERSONAL_PLAYLISTS.md).
 
 ## Durante la diretta
 
@@ -319,7 +350,7 @@ verificano la riproduzione live.
 
 Lume TV non richiede un account. Preferiti, cronologia, guida e impostazioni
 restano sul dispositivo; le sessioni dei provider sono gestite dal backend Rust.
-L’app contatta i servizi di WLTV, EPG-Guide e delle emittenti, il servizio di
+L’app contatta i servizi di WLTV, EPG-Guide, EPGShare01 e delle emittenti, il servizio di
 aggiornamento CEF per preparare Widevine e GitHub per controllare e scaricare
 le nuove versioni del programma.
 

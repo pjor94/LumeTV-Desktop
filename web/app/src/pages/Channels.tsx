@@ -1,67 +1,18 @@
-import { app, navigate, play, resetFilters } from '../app';
-import { currentProgramme, filterChannels, matchesProvider, range } from '../domain';
-import {
-    BrandIntro,
-    ChannelCard,
-    EmptyState,
-    Heading,
-    Icon,
-    StationLogo,
-} from '../components/common';
-
-function Hero() {
-    const state = { ...app.get(), channels: app.get().channels.filter((c) => c.kind !== 'radio') };
-    const channel =
-        state.preferences.recent
-            .map((id) => state.channels.find((c) => c.id === id))
-            .find(Boolean) || state.channels[0];
-    if (!channel) return null;
-    const programme = currentProgramme(state.guide.programmes[channel.id], state.now);
-    return (
-        <section data-key="hero" className="hero" aria-label="Canale in evidenza">
-            <BrandIntro>
-                <div className="hero-content">
-                    <div className="hero-channel">
-                        {channel.name}
-                        {programme ? ' · In onda adesso' : ' · In diretta'}
-                    </div>
-                    <h2>{programme?.title || 'Accendi il momento giusto.'}</h2>
-                    <p>
-                        {programme
-                            ? programme.description ||
-                              `La diretta di ${channel.name}, da vivere adesso.`
-                            : 'I canali che ami, la guida per scegliere. Tutto il piacere della TV, con la semplicità di Lume.'}
-                    </p>
-                    <div className="hero-actions">
-                        <button
-                            className="button primary"
-                            data-play={channel.id}
-                            onClick={() => play(channel.id)}
-                        >
-                            <Icon name="play" />
-                            Guarda {programme ? 'ora' : channel.name}
-                        </button>
-                        {programme ? (
-                            <span className="hero-time">{range(programme)}</span>
-                        ) : (
-                            <button
-                                className="text-button"
-                                data-route="discover"
-                                style={{ color: '#b7c9e3' }}
-                                onClick={() => navigate('discover')}
-                            >
-                                Cosa guardare <Icon name="arrow" />
-                            </button>
-                        )}
-                    </div>
-                </div>
-                <StationLogo channel={channel} extra="hero-station" />
-            </BrandIntro>
-        </section>
-    );
-}
-export function Channels({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
-    const state = { ...app.get(), channels: app.get().channels.filter((c) => c.kind !== 'radio') };
+import { personalizedChannels } from '../domain';
+import { library, librarySelection } from '../personal';
+import { useStore } from '../store';
+import { LibraryCatalog, SourceSelector } from './LibraryCatalog';
+import { app, openGuide, resetFilters } from '../app';
+import { filterChannels, matchesProvider } from '../domain';
+import { ChannelCard, EmptyState, Heading, Icon } from '../components/common';
+import { CatalogHero, RecentChannels } from '../components/CatalogHome';
+export function BuiltinChannels({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
+    const state = {
+        ...app.get(),
+        channels: personalizedChannels(app.get().channels, app.get().preferences).filter(
+            (c) => c.kind !== 'radio',
+        ),
+    };
     const channels = filterChannels(state.channels, {
         provider: state.provider,
         group: state.group,
@@ -89,35 +40,9 @@ export function Channels({ favoritesOnly = false }: { favoritesOnly?: boolean })
             {!favoritesOnly &&
                 !state.query &&
                 state.provider === 'all' &&
-                state.group === 'all' && <Hero key="hero" />}
+                state.group === 'all' && <CatalogHero channel={recent[0] || state.channels[0]} />}
             {!favoritesOnly && !state.query && !!recent.length && (
-                <section
-                    key="recent"
-                    data-key="recent"
-                    className="recent-strip"
-                    aria-label="Visti di recente"
-                >
-                    <span className="recent-label">Visti di recente</span>
-                    <div className="recent-row">
-                        {recent.slice(0, 5).map((c) => (
-                            <button
-                                key={c.id}
-                                className="recent-channel"
-                                data-play={c.id}
-                                onClick={() => play(c.id)}
-                            >
-                                <StationLogo channel={c} />
-                                <span>
-                                    <strong>{c.name}</strong>
-                                    <small>
-                                        {currentProgramme(state.guide.programmes[c.id], state.now)
-                                            ?.title || 'Torna alla diretta'}
-                                    </small>
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </section>
+                <RecentChannels channels={recent} />
             )}
             <div key="channel-heading" data-key="channel-heading" className="section-heading">
                 <h2>
@@ -125,11 +50,7 @@ export function Channels({ favoritesOnly = false }: { favoritesOnly?: boolean })
                     <span>{channels.length}</span>
                 </h2>
                 {!favoritesOnly && (
-                    <button
-                        className="text-button"
-                        data-route="guide"
-                        onClick={() => navigate('guide')}
-                    >
+                    <button className="text-button" data-route="guide" onClick={() => openGuide()}>
                         Apri la guida <Icon name="arrow" />
                     </button>
                 )}
@@ -206,6 +127,21 @@ export function Channels({ favoritesOnly = false }: { favoritesOnly?: boolean })
                         {favoritesOnly ? 'Esplora i canali' : 'Mostra tutti i canali'}
                     </button>
                 </EmptyState>
+            )}
+        </>
+    );
+}
+
+export function Channels({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
+    const personal = useStore(library);
+    const selection = useStore(librarySelection);
+    return (
+        <>
+            {personal.sources.some((s) => s.enabled) && <SourceSelector />}
+            {selection.source !== 'builtin' && personal.sources.some((s) => s.enabled) ? (
+                <LibraryCatalog favoritesOnly={favoritesOnly} />
+            ) : (
+                <BuiltinChannels favoritesOnly={favoritesOnly} />
             )}
         </>
     );

@@ -17,11 +17,36 @@ Il catalogo e la logica delle integrazioni di Lume TV derivano da **WorldLiveTV 
 
 **UI desktop — 8 novembre 2026:** logo, simbolo e icona derivano dalle risorse originali Android `docs/brand`; il catalogo iniziale di 46 canali deriva dalla playlist locale Android. Le risorse web, la guida XMLTV/XZ con `lzma-rust2` 0.24.0 e la persistenza delle preferenze sono state aggiunte per il desktop. La fonte pubblica EPG è `api.epg-guide.com/get/wltv.xz`; loghi e palinsesti restano dei rispettivi titolari. Widevine è stato acquisito dal Component Updater nel solo profilo dell’app ed è escluso dal bundle.
 
+**EPG supplementare — 18 novembre 2026:** [EPGShare01](https://epgshare01.online/)
+fornisce il file pubblico
+[`epg_ripper_IT1.xml.gz`](https://epgshare01.online/epgshare01/epg_ripper_IT1.xml.gz),
+consultato dal dispositivo solo come integrazione dei metadati personali e Lume
+mancanti. Il feed e le immagini vengono scaricati nella cache locale e non sono
+inclusi nel pacchetto dell’app. La fonte è indicata nell’interfaccia; loghi e
+palinsesti rimangono dei rispettivi titolari.
+
 **Catalogo completo — 8 novembre 2026:** estensione ai 126 canali supportati da Android nella playlist `resources/channels.m3u`, con porting delle integrazioni Sky/Discovery e della selezione Rai TGR da `StreamResolver.kt` e `RaiResolver.kt`. Le dirette conservano gli header previsti dalla playlist. La lista si aggiorna dalla fonte pubblica `tvchannels.worldtvlive.eu/tv/_dtt_kodi/list.m3u8`; `resources/catalog-legacy.json` mantiene gli identificativi dei precedenti 46 canali. Nuove cache, controlli delle destinazioni di rete e filtri desktop sono modifiche del progetto Lume TV.
 
 **Radio — 11 novembre 2026:** `resources/radios.json` e `resources/radio-source.json` provengono dal lavoro radio presente nel checkout locale di Lume TV Android, ancora non pubblicato al momento del porting. Il catalogo WorldRadio è fornito da WorldLiveTV / WLTV Group tramite `www.worldtvlive.eu/world/files/worldradio/IT.bin`. L’importatore Rust adatta la normalizzazione delle città, gli identificativi e la deduplicazione di `RadioCatalog.kt`. La copia di riferimento contiene 1.312 voci grezze, da cui risultano 1.310 stazioni. Cache, player audio e interfaccia desktop sono modifiche di Lume TV. Nomi e contenuti trasmessi restano dei rispettivi titolari.
 
 Le integrazioni adattate in Rust conservano l’origine e le attribuzioni del codice da cui derivano. Chi le ridistribuisce deve mantenerne gli avvisi e rispettare la GPL-3.0-or-later indicata in `Cargo.toml` e nel file `LICENSE`.
+
+**Liste personali — 13 novembre 2026:** parser M3U, metadati Kodi/OTT,
+header per risorsa, ClearKey/Widevine, XMLTV personale e catch-up prendono come
+riferimento Lume TV Android 0.9.0 (`f28bde3`) e i successivi sviluppi locali
+del catalogo continuo, con riferimento committato `c8af674`. Le implementazioni
+Rust/SQLite, le API locali e l’interfaccia React sono adattamenti desktop.
+L’attribuzione GPL-3.0-or-later di Lume TV e delle integrazioni WLTV resta valida.
+
+**Libreria VOD — 17 novembre 2026:** modello, riconoscimento di film/episodi,
+raccolte, continuità e integrazione TMDB sono adattati dai file Android locali
+`VodMetadata.kt`, `VideoCatalog.kt`, `VideoContinuity.kt`, `VideoMetadataRepository.kt`
+e `TmdbClient.kt`. Indice SQLite, API e interfaccia React sono adattamenti desktop.
+Il marchio `web/app/assets/tmdb.svg` proviene da `docs/brand/tmdb.svg` di Android;
+marchio e immagini dei titoli restano dei rispettivi titolari. Le immagini TMDB
+vengono scaricate nel profilo privato solo quando la funzione è attiva e non
+sono incluse nel repository o nel bundle. This product uses the TMDB API but
+is not endorsed or certified by TMDB.
 
 ## Shaka Player
 
@@ -90,7 +115,33 @@ gestione degli errori e il collegamento al backend Lume sono modifiche del
 progetto. Il bootstrap binario proviene dall’SDK Windows verificato e resta
 accoppiato alla relativa DLL CEF; il contesto sandbox viene passato alla app.
 
+**Compatibilità Android — 18 novembre 2026:** backup e formato JSONL adattano
+`BackupCipher`, `PersonalBackupRepository`, `PersonalPlaylistStore` e
+`BackupPersonalData`; associazione TV e riferimenti di riproduzione adattano
+`CompanionProtocol`, `CompanionClient`, `CompanionPairing`, `CompanionPlaylistClient`
+e `WatchReference` dal checkout locale Android. Sono aggiunti servizi Rust,
+recupero del ripristino, UI desktop e prove con dati sintetici. I sorgenti
+Android sono stati consultati senza modificarli.
+Le rotte Discovery delle liste adattano `PlaylistLocalplay` e la precedenza
+delle configurazioni provider di `PersonalPlaybackConfig`, riusando il resolver
+desktop esistente.
+
 ## Dipendenze Rust
+
+Il porting delle liste personali aggiunge `rusqlite` 0.37.0 (MIT), con SQLite
+incorporato tramite `libsqlite3-sys`; `chrono` 0.4.45 e `chrono-tz` 0.10.4
+(MIT OR Apache-2.0); `encoding_rs` 0.8.44 ((Apache-2.0 OR MIT) AND BSD-3-Clause)
+ed `encoding_rs_io` 0.1.8 (MIT OR Apache-2.0). Attiva inoltre cookie in reqwest
+e runtime multithread Tokio. I relativi avvisi vengono raccolti dalla pipeline
+esistente insieme a quelli delle dipendenze transitive.
+
+Il riconoscimento dei titoli usa `unicode-normalization` 0.1.26 (MIT OR
+Apache-2.0). Il companion usa direttamente `rustls` 0.23.46 (Apache-2.0 OR ISC OR
+MIT), già presente nel trasporto HTTP, con provider crittografico `ring` 0.17.
+La cifratura dei backup usa AES-256-GCM e PBKDF2-HMAC-SHA256 da `ring`, già
+incluso dal progetto; le prove indipendenti usano Node/OpenSSL. Il certificato
+e la chiave in `tests/fixtures/companion` sono dati sintetici pubblici, destinati
+esclusivamente alle prove locali, e non identificano un dispositivo reale.
 
 Le dipendenze dirette sono dichiarate in `Cargo.toml`; versioni e checksum risolti, comprese le dipendenze transitive, sono registrati in `Cargo.lock`. I pacchetti mantengono le proprie licenze e i propri avvisi nei sorgenti distribuiti tramite Cargo.
 

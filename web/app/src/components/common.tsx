@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { app, playback, play, savePreferences } from '../app';
-import { currentProgramme, date, progress, providerName, isRadio } from '../domain';
+import { channelProgramme, date, progress, providerName, isRadio } from '../domain';
 import { motion } from '../motion';
 import type { Channel } from '../types';
 
@@ -21,9 +21,11 @@ export function StationLogo({ channel, extra = '' }: { channel: Channel; extra?:
         );
     const state = app.get();
     const name = channel.name.replace(/^Rai\s*/, '');
-    const url = state.guide.logos[channel.id]
-        ? `/art/channel/${encodeURIComponent(channel.id)}?v=${state.guide.updated_at}`
-        : null;
+    const url = channel.source_id
+        ? `/art/channel/${encodeURIComponent(channel.id)}${channel.artwork_revision ? `?v=${encodeURIComponent(channel.artwork_revision)}` : ''}`
+        : state.guide.logos[channel.id]
+          ? `/art/channel/${encodeURIComponent(channel.id)}?v=${state.guide.updated_at}`
+          : null;
     return (
         <span className={`station-logo ${extra}`} style={stationStyle(channel)} aria-hidden="true">
             {channel.provider === 'rai' && /^[12345]$/.test(name) ? (
@@ -31,7 +33,28 @@ export function StationLogo({ channel, extra = '' }: { channel: Channel; extra?:
                     Rai<b>{name}</b>
                 </span>
             ) : (
-                <span className={`station-fallback ${channel.name.length > 7 ? 'small' : ''}`}>
+                <span
+                    className={`station-fallback ${channel.name.length > 7 ? 'small' : ''}`}
+                    data-short={
+                        channel.name.length <= 3
+                            ? channel.name
+                            : channel.name
+                                  .trim()
+                                  .split(/\s+/)
+                                  .slice(0, 2)
+                                  .map((word) => Array.from(word)[0] || '')
+                                  .join('')
+                                  .toLocaleUpperCase()
+                    }
+                    style={
+                        {
+                            '--logo-letters': Math.max(
+                                4,
+                                ...channel.name.split(/\s+/).map((word) => Array.from(word).length),
+                            ),
+                        } as CSSProperties
+                    }
+                >
                     {channel.name}
                 </span>
             )}
@@ -70,7 +93,7 @@ export function FavoriteButton({
             title={favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}
             onClick={async (event) => {
                 const button = event.currentTarget;
-                const card = button.closest('.channel-card');
+                const card = button.closest('.continuous-row') || button.closest('.channel-card');
                 const neighbour =
                     card?.nextElementSibling?.querySelector<HTMLButtonElement>('[data-favorite]') ||
                     card?.previousElementSibling?.querySelector<HTMLButtonElement>(
@@ -99,10 +122,30 @@ export function FavoriteButton({
         </button>
     );
 }
+function ChannelOptionsButton({ channel }: { channel: Channel }) {
+    if (channel.content === 'vod') return null;
+    return (
+        <button
+            className="icon-button channel-options"
+            aria-label={`Personalizza ${channel.name}`}
+            title="Personalizza canale"
+            onClick={() =>
+                app.set({ dialog: { kind: 'customize', key: channel.id }, dialogOpen: true })
+            }
+        >
+            <Icon name="settings" />
+        </button>
+    );
+}
 export function ChannelCard({ channel }: { channel: Channel }) {
     if (isRadio(channel)) return <RadioCard channel={channel} />;
     const state = app.get();
-    const programme = currentProgramme(state.guide.programmes[channel.id], state.now);
+    const video = channel.content === 'vod';
+    const programme = channelProgramme(channel, state.guide.programmes, state.now);
+    const group = channel.source_id
+        ? channel.group || (video ? 'Video' : 'TV')
+        : providerName(channel.provider);
+    const action = video ? 'Riproduci' : 'Guarda';
     return (
         <article
             data-key={`channel-${channel.id}`}
@@ -113,16 +156,22 @@ export function ChannelCard({ channel }: { channel: Channel }) {
                 className="channel-main"
                 data-play={channel.id}
                 data-focus={`channel-${channel.id}`}
-                aria-label={`Guarda ${channel.name}${programme ? ', ' + programme.title : ''}`}
+                aria-label={`${action} ${channel.name}${programme ? ', ' + programme.title : ''}`}
                 onClick={() => play(channel.id)}
             >
-                <span className="channel-number">
-                    {String(channel.number).padStart(2, '0')} <span>/</span>{' '}
-                    {providerName(channel.provider)}
+                <span className="channel-number" title={group}>
+                    {channel.number > 0 && !(channel.source_id && channel.number === 9999) && (
+                        <>
+                            {String(channel.number).padStart(2, '0')} <span>/</span>{' '}
+                        </>
+                    )}
+                    {group}
                 </span>
                 <StationLogo channel={channel} />
                 <span className="channel-name">{channel.name}</span>
-                <span className="channel-programme">{programme?.title || 'Guarda in diretta'}</span>
+                <span className="channel-programme">
+                    {programme?.title || (video ? 'Guarda il video' : 'Guarda in diretta')}
+                </span>
                 {programme && (
                     <span className="channel-progress">
                         <i style={{ width: `${progress(programme, state.now)}%` }} />
@@ -133,6 +182,7 @@ export function ChannelCard({ channel }: { channel: Channel }) {
                 </span>
             </button>
             <FavoriteButton channel={channel} />
+            <ChannelOptionsButton channel={channel} />
         </article>
     );
 }
@@ -158,6 +208,7 @@ export function RadioCard({ channel }: { channel: Channel }) {
                 <Icon name="play" className="radio-play" />
             </button>
             <FavoriteButton channel={channel} />
+            <ChannelOptionsButton channel={channel} />
         </article>
     );
 }

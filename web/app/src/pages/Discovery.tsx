@@ -1,3 +1,4 @@
+import { personalizedChannels } from '../domain';
 import { app, navigate, play, showProgramme } from '../app';
 import { progress, range, remainingLabel, selectProgrammes } from '../domain';
 import {
@@ -11,7 +12,12 @@ import {
 import type { Period } from '../types';
 
 export function Discovery() {
-    const state = { ...app.get(), channels: app.get().channels.filter((c) => c.kind !== 'radio') };
+    const state = {
+        ...app.get(),
+        channels: personalizedChannels(app.get().channels, app.get().preferences).filter(
+            (c) => c.kind !== 'radio',
+        ),
+    };
     const items = selectProgrammes(state.channels, state.guide.programmes, {
         period: state.period,
         favorites: state.preferences.favorites,

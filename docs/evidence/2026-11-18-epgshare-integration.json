@@ -1,0 +1,112 @@
+{
+  "date": "2026-11-18",
+  "scope": "EPGShare IT1 as the final public metadata source for personal live TV",
+  "source": "EPGShare IT1 (XMLTV gzip)",
+  "precedence": {
+    "guide": "Declared/configured personal guide remains authoritative even when disabled or unavailable; otherwise keep Lume programmes for the channel, and select EPGShare only when the Lume schedule is absent in the retained horizon.",
+    "logo": "Keep a declared personal logo; otherwise keep existing valid Lume logo references, and use EPGShare only if no Lume reference is available. A fetch failure does not remove a declared higher-priority logo.",
+    "schedule_selection": "Use a single public source per channel; an empty search/date does not merge schedules.",
+    "safety": "Existing ambiguous/region/timeshift matching protections, manual exclusions, VOD separation, original streams and public/private credential separation remain enforced."
+  },
+  "public_client_verification": {
+    "rust_public_download": "verified",
+    "channels": 195,
+    "programmes": 10981,
+    "downloaded_at": 1795016998907,
+    "private_provider_requests": 0,
+    "etag_recorded": true,
+    "last_modified_recorded": true
+  },
+  "coverage_sample": {
+    "playlist": "prova",
+    "channels": 157,
+    "lume_programme_channels_retained": 14,
+    "epgshare_programme_channels_added": 43,
+    "total_with_programmes": 57,
+    "with_current_programme": 57,
+    "with_next_programme": 55,
+    "valid_logos": 58,
+    "personal_provider_requests": 0,
+    "sky_examples": [
+      "Sky Uno",
+      "Sky Atlantic",
+      "Sky Serie",
+      "Sky Adventure",
+      "Sky Cinema Uno",
+      "Sky Sport Uno",
+      "Sky Sport Calcio",
+      "Sky Sport F1",
+      "Sky Sport Tennis"
+    ],
+    "unmatched_sky_sample": [
+      "Sky Sport 253",
+      "Sky Sport 254",
+      "Sky Sport 255",
+      "Sky Sport 256",
+      "Sky Sport 257",
+      "Sky Sport 258",
+      "Sky Sport 259",
+      "Sky Cinema Illumination",
+      "Sky Uno Plus"
+    ]
+  },
+  "checks": {
+    "rust_passed": 161,
+    "rust_optional_ignored": 3,
+    "browser_passed": 56,
+    "browser_optional_capture_skipped": 2,
+    "typescript_unit_passed": 29,
+    "clippy_warnings": 0,
+    "rustfmt": "passed",
+    "prettier": "passed",
+    "frontend_bundle_stamp": "passed",
+    "native_macos_build": "passed",
+    "bundle_signature": "verified",
+    "local_http_regressions": "Public gzip, no private Authorization/Cookie/Referer, ETag/Last-Modified, 304, retained-window renewal after 12 hours, persisted 429 pause, invalid gzip/XML preserves prior index",
+    "priority_regressions": "Lume/programme/logo priorities independently, no fallback on empty date/search in a known primary schedule, primary identity conflict exclusion, personal guide/logo precedence, original playback identity and URL retained",
+    "local_api": "Programmes, epgshare origin, no archive privileges, and PNG responses verified without exposing personal URLs or headers"
+  },
+  "delivery": {
+    "bundle_updated": true,
+    "signature_verified": true,
+    "files_replaced": 9,
+    "app_executable_sha256": "5b74e2a83f43d32f5cd42ffb36553c02cc920e5589f0c4f4495bacf9f7c7d7d5",
+    "restart_performed": false,
+    "shared_epgshare_cache_installed": true,
+    "channels": 195,
+    "programmes": 10981,
+    "downloaded_at": 1795016998907,
+    "new_public_logos_seeded": 43,
+    "preserved": {
+      "personal/sources.json": true,
+      "preferences.json": true,
+      "guide.json": true,
+      "public-guide.sqlite": true
+    },
+    "native_app_opened": true,
+    "native_ui_verified": {
+      "source": "prova",
+      "channel": "Sky Cinema Collection",
+      "epgshare_notice_visible": true,
+      "programme_list_visible": true,
+      "current_title_visible": "Ritorno al futuro"
+    },
+    "activation": "new build open on Mac"
+  },
+  "limits": [
+    "Point-in-time EPG coverage is not a guarantee for every channel or editorial correctness of third-party schedules.",
+    "Some event channels have no programmes in the source; ambiguous and unmatched channels remain unassigned.",
+    "Playback decoding was not retested by this metadata task; real native UI and metadata APIs were verified."
+  ],
+  "source_hashes": {
+    "src/guide.rs": "77847537f21e6dbbf770d5b5bf0a566c1bd42754c8596566a2ddbf4f39f948cf",
+    "src/guide/epgshare.rs": "aa93f157295fb552e7f676d2e48079df2fc0cab35642415c6f175a5ab551b5a4",
+    "src/public_guide.rs": "b96d9bfd337360ebad577f775213305bd6031ec5bd2cda5f515508af1f7bc895",
+    "src/personal/metadata.rs": "55c4950dea7e944a921a0c5ae8bc73033dedff6a74d99d361e7e32bffa9b17e8",
+    "src/personal/guide.rs": "b7b4bdcfb219bdccf42c1f630ac94e25dc2279c82e6a7ff7a77500bb7e192ba0",
+    "tests/desktop.rs": "b21b7f4b8eaf8c436eb7b92434e76bb758272c4dae05e2978831eb19509cfbd5",
+    "web/app/src/pages/PersonalGuide.tsx": "474697100f37c70581fc0e8dc9da21e86c206516efa9fc69d94cfa903758c2ee",
+    "web/app/src/pages/Playlists.tsx": "ef5e7f47b0318a735fc0adba8aae3788ad74d8096f2430af713de20e13c47109",
+    "web/app/bundle/app.js": "40f44c48830c85d9162c9616946cce246af1b6f467b41ded56aa0d7c4e520934"
+  }
+}

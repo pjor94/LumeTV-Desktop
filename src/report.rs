@@ -309,6 +309,33 @@ pub fn assess_playback(
     drm: bool,
     license_ok: bool,
 ) -> Value {
+    assess_playback_with_license(
+        events,
+        required_seconds,
+        drm,
+        if license_ok {
+            LicenseEvidence::Http
+        } else {
+            LicenseEvidence::None
+        },
+    )
+}
+
+/// Supplied by the server's session configuration, never by browser events.
+pub enum LicenseEvidence {
+    None,
+    Http,
+    LocalClearKey,
+}
+
+pub fn assess_playback_with_license(
+    events: &[Value],
+    required_seconds: u64,
+    drm: bool,
+    license: LicenseEvidence,
+) -> Value {
+    let license_ok = matches!(license, LicenseEvidence::Http);
+    let local_clearkey = matches!(license, LicenseEvidence::LocalClearKey);
     struct Observation {
         current: f64,
         at: u64,
@@ -395,7 +422,7 @@ pub fn assess_playback(
         && valid_elapsed >= required_seconds as f64
         && progressing_frames > 0
         && video_dimensions;
-    let drm_ok = !drm || (license_ok && encrypted && usable_key);
+    let drm_ok = !drm || ((license_ok || local_clearkey) && encrypted && usable_key);
     json!({
         "status":if video_ok && drm_ok {"verified"} else {"not_verified"},
         "required_seconds":required_seconds, "progress_seconds":(progress*1000.0).round()/1000.0,
@@ -403,6 +430,7 @@ pub fn assess_playback(
         "decoded_video_frames_delta":progressing_frames, "video_frames_observed":max_frames,
         "video_dimensions_observed":video_dimensions,
         "drm_required":drm, "license_http_success":license_ok, "encrypted_event_observed":encrypted,
+        "license_local_clearkey":local_clearkey,
         "usable_key_observed":usable_key, "drm_verified":drm && drm_ok && video_ok,
         "audio_decoded_bytes":audio_bytes,
         "audio_audibility":if audible {"manually_verified"} else {"not_verified"},
@@ -579,6 +607,32 @@ mod tests {
         assert_eq!(assess_playback(&e, 2, true, true)["status"], "verified");
         assert_eq!(
             assess_playback(&e, 2, true, false)["status"],
+            "not_verified"
+        );
+    }
+
+    #[test]
+    fn local_clearkey_evidence_does_not_claim_an_http_license_or_skip_video_checks() {
+        let mut events = samples();
+        events.push(json!({"kind":"encrypted","encrypted":true}));
+        events.push(json!({"kind":"key_statuses","key_statuses":["usable"]}));
+        assert_eq!(
+            assess_playback(&events, 2, true, false)["status"],
+            "not_verified"
+        );
+        let local = assess_playback_with_license(&events, 2, true, LicenseEvidence::LocalClearKey);
+        assert_eq!(local["status"], "verified");
+        assert_eq!(local["license_http_success"], false);
+        assert_eq!(local["license_local_clearkey"], true);
+        assert_eq!(
+            assess_playback_with_license(&events, 30, true, LicenseEvidence::LocalClearKey)
+                ["status"],
+            "not_verified"
+        );
+        events.pop();
+        assert_eq!(
+            assess_playback_with_license(&events, 2, true, LicenseEvidence::LocalClearKey)
+                ["status"],
             "not_verified"
         );
     }

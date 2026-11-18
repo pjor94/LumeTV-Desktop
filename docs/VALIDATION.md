@@ -1,5 +1,128 @@
 # Protocollo di validazione del player
 
+## Integrazione EPGShare IT1
+
+L’[evidenza del 18 novembre](evidence/2026-11-18-epgshare-integration.json)
+verifica separatamente download reale con il client Rust, associazioni nella
+copia locale della lista «prova» e disponibilità dei loghi pubblici.
+La sorgente personale della copia resta in pausa: nessun manifest, segmento,
+licenza o aggiornamento della lista viene richiesto da questa prova.
+
+Le regressioni coprono priorità personale → Lume → EPGShare, guida e logo
+indipendenti, nessuna fusione per ricerche/date senza risultati, conflitti di
+identità, cache persistente, gzip, ETag/Last-Modified, 304 e rinnovo della
+finestra, 429 con backoff persistente e pubblicazione atomica dei feed validi.
+Le API verificano `guide_origin`, eventi senza archivio e PNG dalla cache;
+il browser controlla stato della sorgente, guida e rinnovo dei loghi.
+
+Per indicizzare una copia pubblica già scaricata, preservandone la data:
+
+```sh
+cargo run --locked --example index_public_guide -- /percorso/IT1.xml /percorso/profilo-di-prova epgshare
+```
+
+## Metadati Lume nelle liste personali
+
+La [verifica del 18 novembre](evidence/2026-11-18-public-guide-fallback.json)
+usa il feed completo e una copia locale della lista autorizzata. Le richieste
+alle API della copia non aggiornano la sorgente personale; i loghi vengono
+verificati tramite il trasporto pubblico. La data originale del download XMLTV
+resta conservata, senza presentare una vecchia copia come appena scaricata.
+
+Le regressioni coprono canali esterni al catalogo, ID e nomi univoci, ambiguità,
+edizioni regionali e «+1», priorità indipendenti di logo e guida, esclusioni
+manuali e separazione VOD. Un feed incompleto o non valido conserva l’indice
+precedente. Le API verificano programmi e immagini senza esporre URL/header
+personali; il browser controlla home, guida, dettagli e rinnovo dei loghi senza
+cambiare la revisione della lista.
+
+Per ricostruire l’indice senza ulteriori richieste di rete:
+
+```sh
+cargo run --locked --example index_public_guide -- /percorso/feed.xml /percorso/profilo-di-prova
+```
+
+Il comando usa la data di modifica del file come data del download e preserva
+uno snapshot del catalogo più recente. Usare un profilo di prova separato.
+
+## Aggiornamento degli stream personali
+
+La [verifica del 18 novembre](evidence/2026-11-18-personal-refresh.json) distingue
+il successo del manifest, l’accesso ai frammenti e la decodifica nel player.
+Un manifest con risposta 200 non dimostra che i suoi frammenti siano autorizzati.
+Il confronto di URL vecchi e nuovi usa solo servizi e header della lista
+esplicitamente autorizzata; gli indirizzi, le chiavi e le credenziali non entrano
+nelle evidenze pubblicabili.
+
+I test browser coprono riapertura dopo aggiornamento, aggiornamento fallito senza
+cicli e cambio canale durante l’attesa. Le prove Rust verificano selezione HLS
+con header e indirizzo originale conservati, conteggio degli errori HTTP e
+indirizzi IP pubblici/privati, incluse forme numeriche alternative e IPv6.
+La selezione HLS sul servizio reale viene provata con un profilo temporaneo;
+la riproduzione CEF in corso resta separata da questa verifica del trasporto.
+
+## Compatibilità Android, backup e companion
+
+La verifica del 18 novembre è registrata in
+[evidence/2026-11-18-android-parity.json](evidence/2026-11-18-android-parity.json).
+La suite Rust copre cifratura, password errata, riordino/troncamento dei frame,
+dati finali estranei, limiti sull’espansione effettiva degli archivi, ripristino
+interrotto e applicazione additiva delle scelte. Un archivio sintetico costruito
+separatamente verifica formato Android, avanzamenti, documenti ereditati,
+personalizzazioni e riferimenti dei contenuti. Le rotte Discovery vengono provate
+con risposte provider sintetiche, senza interrogare i servizi delle emittenti.
+
+Il vettore crittografico indipendente usa Node/OpenSSL:
+
+```sh
+node scripts/check_android_backup.mjs
+```
+
+Le prove companion verificano HMAC e pin SPKI indipendenti, parser DNS limitato,
+TLS locale, indirizzi LAN ammessi e assenza di token nelle risposte pubbliche.
+Una chiave TLS diversa deve fermare la richiesta prima dell’invio del token.
+I test browser coprono associazione, telecomando e trasferimento con consenso
+esplicito alle credenziali e conferma separata dell’importazione.
+
+La prova nativa usa solo un profilo temporaneo con dati sintetici e verifica
+anche il dialogo Salva, l’identità del file esportato e la riapertura tramite
+selettore file. Non sostituisce il collaudo dell’associazione e della riproduzione
+su una TV Android fisica. Solo audio, risparmio dati e controlli di sistema
+Android restano fuori dall’ambito desktop richiesto.
+
+## Libreria VOD desktop
+
+La verifica del 17 novembre è registrata in
+[evidence/2026-11-17-vod.json](evidence/2026-11-17-vod.json) e riassunta in
+[STATUS.md](STATUS.md#libreria-vod-da-android-17-novembre).
+
+Oltre alla suite ordinaria, l’indice ha una prova esplicita su disco:
+
+```sh
+CARGO_HOME="$PWD/.cache/cargo" cargo test --locked --lib half_million_vod_titles_keep_storage_and_query_windows_bounded -- --ignored --nocapture
+```
+
+La prova importa 500.000 film, controlla l’ultima pagina, la ricerca sull’intero
+archivio, le finestre home e il limite di un GiB per snapshot. Non sostituisce
+la prova separata della capienza complessiva di un milione di voci TV.
+
+`configured_tmdb_resolves_a_public_movie_and_caches_real_artwork` è un test
+ignorato nella suite ordinaria: richiede un token TMDB fornito all’ambiente
+come `LUME_TMDB_READ_TOKEN` e accesso di rete esplicitamente autorizzato.
+Verifica un titolo pubblico, trama, cast e locandina reale, senza usare una
+lista personale. I valori delle credenziali non devono apparire nei report.
+
+I test browser coprono stagioni, ripresa, salvati, visibilità di Continua a
+guardare, completamento, episodio successivo, selezione manuale TMDB,
+errori di avvio e ricerca in una griglia virtuale da 500.000 titoli. Il server
+di prova applica la CSP della build desktop e controlla che le locandine siano
+decodificate; un’immagine scaricata ma bloccata dalla CSP non vale come esito.
+
+La prova nativa usa un profilo temporaneo, immagini TMDB reali e un trailer
+pubblico con supporto Range. Misura frame, tempo e decodifica audio; l’udibilità
+richiede una conferma umana separata. I risultati non dimostrano compatibilità
+con ogni provider, contenitore, codec o configurazione DRM delle liste.
+
 Il [riepilogo delle verifiche](STATUS.md) riporta i risultati correnti. I file
 citati in `reports/` restano locali ed esclusi da Git. Per confrontare nuove
 esecuzioni usa sempre lo stesso [protocollo](VALIDATION.md).
@@ -34,6 +157,13 @@ Sono conservati due tentativi distinti con Chromium 156.0.8078.79 su Debian 12 a
 Il secondo risultato non verifica desktop, GPU o udibilità audio e non dimostra incompatibilità generale di Linux con Widevine. Occorre ripetere la prova in una sessione Linux desktop con browser/CDM disponibili. I container sono stati rimossi dopo aver acquisito i report; Windows resta da eseguire dopo il ripristino dell’avvio della VM.
 
 ## Livelli di evidenza
+
+Per ClearKey con chiavi locali, la sessione server attesta la provenienza locale
+della licenza: non è previsto uno scambio HTTP con un server licenze. Questa
+evidenza resta distinta da `license_http_success` e richiede comunque evento
+cifrato, chiave utilizzabile, tempo e frame decodificati. I dati dichiarati dal
+browser, da soli, non possono attivare questa eccezione. Per Widevine e licenze
+remote continua a essere necessario lo scambio HTTP riuscito.
 
 | Livello | Che cosa dimostra | Che cosa resta da verificare |
 | --- | --- | --- |

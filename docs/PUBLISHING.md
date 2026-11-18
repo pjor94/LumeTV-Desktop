@@ -1,7 +1,7 @@
 # Pubblicazione su GitHub
 
 Il repository pubblico è [pjor94/LumeTV-Desktop](https://github.com/pjor94/LumeTV-Desktop),
-con branch principale `main`. I sorgenti preparano la versione `0.2.0`.
+con branch principale `main`. I sorgenti preparano la versione `0.3.0`.
 La CI esegue i controlli a ogni push o pull request e, se riescono,
 produce i pacchetti scaricabili. Il flusso di tag e release è in
 [RELEASE.md](RELEASE.md).

@@ -1,5 +1,16 @@
 import type { Channel, Period, Programme } from './types';
 export const isRadio = (channel: Channel | null | undefined) => channel?.kind === 'radio';
+export const channelProgramme = (
+    channel: Channel,
+    programmes: Record<string, Programme[]>,
+    now: number,
+) =>
+    currentProgramme(
+        channel.source_id
+            ? [channel.now, channel.next].filter((p) => p !== undefined)
+            : programmes[channel.id],
+        now,
+    );
 
 export const searchable = (value: unknown) =>
     String(value || '')
@@ -151,3 +162,20 @@ export const providerName = (provider: string) =>
         discovery: 'DISCOVERY',
         direct: 'ALTRI CANALI',
     })[provider] || provider;
+
+export function personalizedChannels(
+    channels: Channel[],
+    preferences: import('./types').Preferences,
+): Channel[] {
+    const layout = preferences.channel_layout;
+    if (!layout || (!layout.order.length && !layout.hidden.length)) return channels;
+    const hidden = new Set(layout.hidden.map((r) => r.id));
+    const order = new Map(layout.order.map((id, index) => [id, index]));
+    return channels
+        .filter((c) => !hidden.has(c.id))
+        .sort(
+            (a, b) =>
+                (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+                (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+        );
+}

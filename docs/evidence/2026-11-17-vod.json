@@ -1,0 +1,72 @@
+{
+  "date": "2026-11-17",
+  "scope": "Desktop VOD library adapted from the local Android implementation",
+  "android_reference_sha256": {
+    "core/src/main/kotlin/it/lumetv/core/VodMetadata.kt": "353d88bec347766ecab2f8889839ade88da914a8621006dfad521f9a190b7b7b",
+    "app/src/main/java/it/lumetv/app/data/VideoCatalog.kt": "22ef4c4e6f138d4940f561b95f4203095e337cdd7b791335694acaf806970dd5",
+    "app/src/main/java/it/lumetv/app/data/VideoContinuity.kt": "a1601da41218283e6d9176a5948a8ff6c70284265b8dea331f1eeef7567f29ee",
+    "app/src/main/java/it/lumetv/app/data/TmdbClient.kt": "2b3168811e12b52915e0dc6364ff32b7e97a2787e0bf01ae418643b9de90edff"
+  },
+  "checks": {
+    "rust_ordinary_passed": 127,
+    "browser_passed": 47,
+    "browser_optional_capture_skipped": 2,
+    "typescript_unit_passed": 29,
+    "clippy_warnings": 0,
+    "frontend_stamp": "passed",
+    "format": "passed"
+  },
+  "vod_capacity": {
+    "titles": 500000,
+    "import_and_index_seconds": 181.37,
+    "last_page_home_and_search_seconds": 5.557,
+    "snapshot_bytes": 853889024,
+    "page_limit": 200,
+    "status": "passed"
+  },
+  "tmdb_public_fixture": {
+    "title": "Star Wars (1977)",
+    "status": "ready",
+    "description_and_cast_verified": true,
+    "poster_bytes": 140167,
+    "cached_poster_verified": true,
+    "token_reuse_explicitly_authorized": true
+  },
+  "native_macos": {
+    "public_clip": "W3C Sintel trailer",
+    "source_user_agent_override": "LumeTV",
+    "poster_and_backdrop_render_verified": true,
+    "completion_persisted_as_rewatch": true,
+    "season_filter_verified": true,
+    "assessment": {
+      "audio_audibility": "not_verified",
+      "audio_decoded_bytes": 822671,
+      "decoded_video_frames_delta": 1199,
+      "drm_required": false,
+      "drm_verified": false,
+      "elapsed_server_seconds": 49.999,
+      "encrypted_event_observed": false,
+      "license_http_success": false,
+      "license_local_clearkey": false,
+      "progress_seconds": 49.985,
+      "required_seconds": 30,
+      "status": "verified",
+      "usable_key_observed": false,
+      "video_dimensions_observed": true,
+      "video_frames_observed": 1253
+    }
+  },
+  "limits": [
+    "The previous one-million live-TV capacity result was not rerun or extrapolated to VOD.",
+    "Native playback uses a public clear MP4 clip; this does not establish compatibility with every provider, container or DRM variant.",
+    "Decoded audio is measured; human audio audibility was not confirmed."
+  ],
+  "restored_user_profile": {
+    "sources": 1,
+    "live_entries": 151,
+    "vod_entries": 0,
+    "tmdb_configured": true,
+    "tmdb_enabled": false,
+    "final_frontend_matches_bundle": true
+  }
+}

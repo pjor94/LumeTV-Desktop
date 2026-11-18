@@ -412,6 +412,7 @@ struct Store {
 }
 pub struct CatalogService {
     pub radios: Arc<crate::radio::RadioService>,
+    pub personal: Arc<crate::personal::Library>,
     store: Mutex<Store>,
     loading: AtomicBool,
     path: PathBuf,
@@ -461,6 +462,7 @@ impl CatalogService {
             .map_err(|_| anyhow!("Catalogo non disponibile"))?;
         Ok(Arc::new(Self {
             radios: crate::radio::RadioService::new(directory)?,
+            personal: crate::personal::Library::new(directory)?,
             store: Mutex::new(store),
             loading: AtomicBool::new(false),
             path,
@@ -483,15 +485,15 @@ impl CatalogService {
         }
     }
     pub fn channel(&self, id: &str) -> Option<CatalogChannel> {
-        self.store
-            .lock()
-            .ok()?
-            .parsed
-            .channels
-            .iter()
-            .find(|c| c.id == id)
-            .cloned()
+        // Personal metadata can consult this catalogue through the shared guide.
+        // Release its lock before looking in the other libraries.
+        let builtin = {
+            let store = self.store.lock().ok()?;
+            store.parsed.channels.iter().find(|c| c.id == id).cloned()
+        };
+        builtin
             .or_else(|| self.radios.channel(id))
+            .or_else(|| self.personal.channel(id).map(|c| c.channel))
     }
     pub fn desktop_snapshot(&self) -> CatalogSnapshot {
         let mut snapshot = self.snapshot();

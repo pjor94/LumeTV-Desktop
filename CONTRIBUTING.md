@@ -8,7 +8,7 @@ e [attribuzioni](THIRD_PARTY_NOTICES.md).
 ## Ambiente
 
 - Rust 1.92+ con `rustfmt` e `clippy`.
-- Node 22+ per i test JavaScript; nessuna installazione npm necessaria.
+- Node 22.12+ e `npm ci --prefix web/app` per UI React e test browser.
 - Python 3.12+ per gli strumenti e i loro test; non servono pacchetti pip.
 - Git per controllare il contenuto destinato al repository.
 
@@ -20,13 +20,17 @@ scaricare un SDK o Widevine per lavorare sul core, sui test Node o sui test Pyth
 
 ```sh
 python3 scripts/check_repository.py
+npm --prefix web/app run check:format
+npm --prefix web/app run build
+npm --prefix web/app test
+npm --prefix web/app run test:browser
 cargo fmt --all -- --check
 cargo test --locked --all-targets
 cargo clippy --locked --all-targets -- -D warnings
 cargo build --locked
 cargo check --locked --features embedded-cef,cef/dox --bins
 cargo check --locked -p lume-cef-windows --features dox
-node --test web/player.test.cjs web/app/app.test.cjs web/app/ui.test.cjs
+node --test web/player.test.cjs
 python3 -m unittest discover -s tests -p 'test_*.py'
 bash -n scripts/build_embedded_macos.sh
 ```
@@ -38,10 +42,13 @@ indicizzati e quelli nuovi non ignorati. Se trova possibili credenziali, indica
 percorso e riga senza stamparne il valore. La cronologia Git e i formati di
 segreti non riconosciuti dal controllo richiedono una revisione separata.
 
-Per le verifiche DOM, avvia un server con document root `web` e apri
-`web/app/ui.fixture.html`. Premi il pulsante di avvio e controlla i nove risultati.
-La directory del progetto contiene profili e cache private: tienila fuori dal
-server. La fixture è esclusa dagli asset dell’app.
+Prima dei test browser installa Chromium con
+`npm exec --prefix web/app -- playwright install chromium`, oppure usa
+`LUME_TEST_CHROME=1` con Chrome già installato.
+Le fixture servono una mappa esplicita di asset: profili e cache restano esclusi.
+Esegui i test Python dopo la compilazione frontend, perché verificano il bundle.
+Il [test di capienza delle liste](docs/PERSONAL_PLAYLISTS.md#verifica) è esplicito
+e richiede alcuni minuti; non fa parte della suite ordinaria.
 
 ## Modifiche CEF e dipendenze
 

@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef } from 'react';
 import { app, closeDialog, navigate, play, toggleReminder } from '../app';
 import { date, range, schedule, time } from '../domain';
+import { ChannelCustomization } from './Personalization';
+import { WatchTvDialog, RemoteDialog } from './Companion';
 import { motion } from '../motion';
 import { Icon, StationLogo } from './common';
 
@@ -187,7 +189,17 @@ export function Dialogs() {
             }}
         >
             <div className="dialog-content" id="dialog-content">
-                {state.dialog?.kind === 'programme' ? (
+                {state.dialogOpen && state.dialog?.kind === 'customize' ? (
+                    <ChannelCustomization id={state.dialog.key} key={state.dialog.key} />
+                ) : state.dialogOpen && state.dialog?.kind === 'companion' ? (
+                    <WatchTvDialog
+                        key={state.dialog.key}
+                        id={state.dialog.key}
+                        position={state.dialog.position}
+                    />
+                ) : state.dialogOpen && state.dialog?.kind === 'remote' ? (
+                    <RemoteDialog key={state.dialog.key} tv={state.dialog.key} />
+                ) : state.dialog?.kind === 'programme' ? (
                     <ProgrammeDetails programmeKey={state.dialog.key} />
                 ) : state.dialog?.kind === 'reminders' ? (
                     <Reminders />

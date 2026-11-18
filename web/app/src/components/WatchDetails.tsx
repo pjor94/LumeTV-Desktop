@@ -8,15 +8,57 @@ import {
     isRadio,
     filterChannels,
 } from '../domain';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '../api';
+import { writeSession } from '../personal';
+import type { Channel } from '../types';
 import { useStoreValue } from '../store';
 import { Equalizer, FavoriteButton, Icon, StationLogo } from './common';
+import { PersonalWatchBrowser } from '../pages/LibraryCatalog';
 
 export function WatchDetails() {
     const nowPlaying = useStoreValue(playback.store, (s) => s.nowPlaying);
+    const mode = useStoreValue(playback.store, (s) => s.mode);
+    const title = useStoreValue(playback.store, (s) => s.contentTitle);
     const state = app.get();
-    const channel = playback.store.get().channel;
+    const playing = playback.store.get().channel;
+    const [personal, setPersonal] = useState<Channel | null>(null);
+    useEffect(() => {
+        if (!playing?.source_id || mode !== 'live' || isRadio(playing)) return;
+        const controller = new AbortController();
+        const update = () =>
+            void api<Channel>(
+                '/api/library/channel',
+                { id: playing.id },
+                { signal: controller.signal },
+            )
+                .then((value) => {
+                    if (!controller.signal.aborted) setPersonal(value);
+                })
+                .catch(() => {});
+        update();
+        const timer = setInterval(update, 30_000);
+        return () => {
+            controller.abort();
+            clearInterval(timer);
+        };
+    }, [playing?.id, mode]);
+    const channel = personal?.id === playing?.id ? personal : playing;
     if (!channel) return null;
+    if (mode !== 'live')
+        return (
+            <>
+                <div className="watch-heading">
+                    <StationLogo channel={channel} />
+                    <div>
+                        <span className="watch-station-name">{channel.name}</span>
+                        <small>{mode === 'archive' ? 'Archivio' : 'Video delle mie liste'}</small>
+                    </div>
+                    <FavoriteButton channel={channel} className="" />
+                </div>
+                <h1>{title}</h1>
+            </>
+        );
     if (isRadio(channel))
         return (
             <>
@@ -36,8 +78,12 @@ export function WatchDetails() {
                 </p>
             </>
         );
-    const now = currentProgramme(state.guide.programmes[channel.id], state.now);
-    const next = schedule(state.guide.programmes[channel.id]).find((p) => p.start > state.now);
+    const now = channel.source_id
+        ? channel.now
+        : currentProgramme(state.guide.programmes[channel.id], state.now);
+    const next = channel.source_id
+        ? channel.next
+        : schedule(state.guide.programmes[channel.id]).find((p) => p.start > state.now);
     return (
         <>
             <div className="watch-heading">
@@ -45,7 +91,9 @@ export function WatchDetails() {
                 <div>
                     <span className="watch-station-name">{channel.name}</span>
                     <small>
-                        Canale {channel.number} · {providerName(channel.provider)}
+                        {channel.source_id
+                            ? channel.group || 'Le mie liste'
+                            : `Canale ${channel.number} · ${providerName(channel.provider)}`}
                     </small>
                 </div>
                 <FavoriteButton channel={channel} className="" />
@@ -76,7 +124,13 @@ export function WatchDetails() {
                         className="text-button"
                         data-programme={`${channel.id}~${next.start}`}
                         aria-label="Dettagli del prossimo programma"
-                        onClick={() => showProgramme(`${channel.id}~${next.start}`)}
+                        onClick={() => {
+                            if (channel.source_id) {
+                                writeSession('guide-source', channel.source_id);
+                                writeSession(`guide-channel-${channel.source_id}`, channel);
+                                navigate('guide');
+                            } else showProgramme(`${channel.id}~${next.start}`);
+                        }}
                     >
                         <Icon name="info" />
                     </button>
@@ -86,6 +140,7 @@ export function WatchDetails() {
     );
 }
 export function WatchBrowser() {
+    if (playback.store.get().channel?.source_id) return <PersonalWatchBrowser />;
     if (isRadio(playback.store.get().channel)) return <RadioBrowser />;
     const state = app.get();
     const current = playback.store.get().current;

@@ -1,4 +1,11 @@
 export interface Channel {
+    now?: Programme;
+    next?: Programme;
+    source_id?: string;
+    guide_origin?: 'lume' | 'epgshare' | 'personal';
+    artwork_revision?: string;
+    content?: 'live' | 'vod';
+    position?: number;
     kind?: 'tv' | 'radio';
     id: string;
     name: string;
@@ -28,6 +35,15 @@ export interface Preferences {
     muted: boolean;
     quality: Quality;
     zap_favorites_only: boolean;
+    audio_language?: string;
+    subtitle_mode?: string;
+    subtitle_language?: string;
+    channel_layout?: {
+        version: number;
+        order: string[];
+        hidden: { id: string; source: string; name: string; kind: string }[];
+        owners: Record<string, string[]>;
+    };
 }
 export interface CatalogStatus {
     radio?: {
@@ -64,10 +80,31 @@ export interface Bootstrap {
 export interface Session {
     playback_id: string;
     channel: Channel;
-    stream: { url: string; drm?: unknown; mime_type?: string; continuous?: boolean };
+    stream: {
+        url: string;
+        drm?: { key_system?: string; clear_keys?: Record<string, string> | null };
+        mime_type?: string;
+        continuous?: boolean;
+        mode?: 'live' | 'vod' | 'archive';
+        title?: string;
+        position?: number;
+        duration?: number;
+        base_offset?: number;
+        event?: string;
+        seekable?: boolean;
+        watch_revision?: number;
+    };
 }
 export type Route =
-    'channels' | 'radio' | 'discover' | 'guide' | 'favorites' | 'settings' | 'watch';
+    | 'channels'
+    | 'radio'
+    | 'discover'
+    | 'guide'
+    | 'favorites'
+    | 'settings'
+    | 'watch'
+    | 'playlists'
+    | 'videos';
 export type Period = 'now' | 'soon' | 'tonight';
 export type WidevinePhase =
     'unavailable' | 'checking' | 'downloading' | 'installing' | 'installed' | 'error';
@@ -89,6 +126,12 @@ export interface Track {
     active: boolean;
 }
 export interface PlaybackState {
+    mode: 'live' | 'vod' | 'archive';
+    contentTitle: string;
+    position: number;
+    duration: number;
+    seekable: boolean;
+    ended: boolean;
     nowPlaying: string;
     current: string | null;
     channel: Channel | null;
@@ -108,7 +151,12 @@ export interface PlaybackState {
     setupElapsed: number;
 }
 export type Dialog =
-    { kind: 'programme'; key: string } | { kind: 'reminders' | 'shortcuts' } | null;
+    | { kind: 'programme'; key: string }
+    | { kind: 'customize'; key: string }
+    | { kind: 'reminders' | 'shortcuts' }
+    | { kind: 'companion'; key: string; position: number }
+    | { kind: 'remote'; key: string }
+    | null;
 export interface Toast {
     id: number;
     message: string;

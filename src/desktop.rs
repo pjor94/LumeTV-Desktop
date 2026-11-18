@@ -2,7 +2,7 @@
 //! Persistent desktop application, backed by the tested Rust provider adapter.
 use crate::{
     catalog::CatalogService,
-    guide::{allowed_logo, GuideService},
+    guide::{allowed_logo_redirect, GuideService},
     preferences::PreferenceStore,
     providers::Resolver,
     server::HarnessServer,
@@ -24,10 +24,16 @@ use std::{
     time::Duration,
 };
 use tiny_http::{Header, Method, Request, Response, Server, StatusCode};
+#[path = "desktop_companion.rs"]
+mod companion_api;
+#[path = "desktop_library.rs"]
+mod personal_api;
 
 const MAX_BODY: usize = 2 * 1024 * 1024;
 
 struct Playback {
+    mode: String,
+    cancel: Arc<AtomicBool>,
     audio: Option<Arc<crate::radio_audio::AudioSession>>,
     id: String,
     channel_id: String,
@@ -35,11 +41,17 @@ struct Playback {
     token: String,
     server: HarnessServer,
 }
-impl Drop for Playback {
-    fn drop(&mut self) {
+impl Playback {
+    fn stop(&self) {
+        self.cancel.store(true, Ordering::Release);
         if let Some(audio) = &self.audio {
             audio.stop();
         }
+    }
+}
+impl Drop for Playback {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 
@@ -53,6 +65,8 @@ struct DesktopState {
     generation: AtomicU64,
     current: Mutex<Option<Arc<Playback>>>,
     preferences: PreferenceStore,
+    backups: Arc<crate::personal::backup::Backups>,
+    companion: Arc<crate::companion::Companion>,
     guide: Arc<GuideService>,
     resolver: Resolver,
     relay: Client,
@@ -104,11 +118,19 @@ impl DesktopServer {
             .build()
             .map_err(|_| anyhow!("Player non disponibile"))?;
         let artwork = Client::builder()
+            .user_agent(crate::providers::USER_AGENT)
+            .no_proxy()
+            .dns_resolver(Arc::new(crate::network::PublicDns))
             .timeout(Duration::from_secs(8))
             .connect_timeout(Duration::from_secs(4))
             .referer(false)
             .redirect(reqwest::redirect::Policy::custom(|attempt| {
-                if attempt.previous().len() < 3 && allowed_logo(attempt.url().as_str()) {
+                if attempt.previous().len() < 3
+                    && attempt
+                        .previous()
+                        .last()
+                        .is_some_and(|from| allowed_logo_redirect(from, attempt.url()))
+                {
                     attempt.follow()
                 } else {
                     attempt.stop()
@@ -126,6 +148,8 @@ impl DesktopServer {
             generation: AtomicU64::new(0),
             current: Mutex::new(None),
             preferences,
+            backups: crate::personal::backup::Backups::new(directory)?,
+            companion: crate::companion::Companion::new(directory)?,
             guide,
             resolver: Resolver::new()?,
             relay,
@@ -136,6 +160,7 @@ impl DesktopServer {
         state.catalog.refresh(false);
         state.catalog.radios.refresh(false);
         state.guide.refresh(false);
+        state.catalog.personal.refresh_due();
         let shared = state.clone();
         let handle = thread::spawn(move || {
             while !shared.stop.load(Ordering::Relaxed) {
@@ -237,6 +262,10 @@ pub fn asset(path: &str) -> Option<(&'static str, &'static [u8])> {
             "image/svg+xml",
             include_bytes!("../web/app/assets/symbol.svg"),
         )),
+        "/assets/tmdb.svg" => Some((
+            "image/svg+xml",
+            include_bytes!("../web/app/assets/tmdb.svg"),
+        )),
         "/favicon.ico" => Some((
             "image/png",
             include_bytes!("../web/app/assets/app-icon.png"),
@@ -256,6 +285,37 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
             || header(&request, "Origin").is_some_and(|origin| origin != state.origin))
     {
         respond_json(request, 403, json!({"error":"unauthorized"}));
+        return;
+    }
+    if let Some(id) = path
+        .strip_prefix("/backup/")
+        .and_then(|s| s.strip_suffix("/Lume.lumebackup"))
+    {
+        if request.method() != &Method::Get
+            || header(&request, "Origin").is_some_and(|o| o != state.origin)
+        {
+            respond_json(request, 403, json!({"error":"unauthorized"}));
+            return;
+        }
+        match state.backups.download(id) {
+            Ok(file) => {
+                let size = file.metadata().ok().map(|m| m.len() as usize);
+                let headers = [
+                    ("Content-Type", "application/octet-stream"),
+                    (
+                        "Content-Disposition",
+                        r#"attachment; filename="Lume.lumebackup""#,
+                    ),
+                    ("Cache-Control", "no-store"),
+                    ("Referrer-Policy", "no-referrer"),
+                ]
+                .iter()
+                .filter_map(|(k, v)| Header::from_bytes(k.as_bytes(), v.as_bytes()).ok())
+                .collect();
+                let _ = request.respond(Response::new(StatusCode(200), headers, file, size, None));
+            }
+            Err(_) => respond_json(request, 404, json!({"error":"not_found"})),
+        }
         return;
     }
     if let Some(capability) = path.strip_prefix("/audio/") {
@@ -298,6 +358,10 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
         let _ = request.respond(Response::new(StatusCode(200), headers, reader, None, None));
         return;
     }
+    if let Some(capability) = path.strip_prefix("/stream/") {
+        personal_api::stream(request, state, capability);
+        return;
+    }
     if request.method() == &Method::Get {
         let asset = asset(&path);
         if let Some((mime, bytes)) = asset {
@@ -305,6 +369,27 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
             return;
         }
         match path.as_str() {
+            "/api/library" => {
+                state.catalog.personal.refresh_due();
+                let mut snapshot = state.catalog.personal.snapshot();
+                snapshot["favorite_count"] = state
+                    .catalog
+                    .personal
+                    .catalog(
+                        &crate::personal::CatalogQuery {
+                            kind: "tv".into(),
+                            content: "live".into(),
+                            favorites: true,
+                            limit: 1,
+                            ..Default::default()
+                        },
+                        &state.preferences.get().favorites,
+                    )
+                    .ok()
+                    .and_then(|v| v.get("total").cloned())
+                    .unwrap_or(json!(0));
+                respond_json(request, 200, snapshot);
+            }
             "/api/bootstrap" => {
                 let catalog = state.catalog.desktop_snapshot();
                 respond_json(
@@ -343,12 +428,39 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
             "/api/widevine" => respond_json(request, 200, json!(state.widevine.snapshot())),
             "/api/updates" => respond_json(request, 200, json!(state.updater.snapshot())),
             _ if path.starts_with("/art/channel/") => channel_art(request, state, &path[13..]),
+            _ if path.starts_with("/art/video/") => {
+                let parts = path[11..].split('/').collect::<Vec<_>>();
+                if parts.len() == 2 && ["poster", "backdrop"].contains(&parts[1]) {
+                    match state
+                        .catalog
+                        .personal
+                        .video_artwork(parts[0], parts[1] == "backdrop")
+                    {
+                        Ok((mime, bytes)) => respond(request, 200, &mime, bytes, vec![]),
+                        Err(_) => {
+                            respond_json(request, 404, json!({"error":"artwork_unavailable"}))
+                        }
+                    }
+                } else {
+                    respond_json(request, 404, json!({"error":"not_found"}));
+                }
+            }
             _ => respond_json(request, 404, json!({"error":"not_found"})),
         }
         return;
     }
     if request.method() != &Method::Post {
         respond_json(request, 405, json!({"error":"method_not_allowed"}));
+        return;
+    }
+    if let Some(id) = path.strip_prefix("/api/library/backup/upload/") {
+        let result = state.backups.upload(id, request.as_reader());
+        personal_api::respond_result(request, result);
+        return;
+    }
+    if let Some(id) = path.strip_prefix("/api/library/upload/") {
+        let result = state.catalog.personal.upload(id, request.as_reader());
+        personal_api::respond_result(request, result);
         return;
     }
     let mut body = vec![];
@@ -366,6 +478,14 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
         respond_json(request, 400, json!({"error":"invalid_json"}));
         return;
     };
+    if path.starts_with("/api/companion/") {
+        companion_api::handle(request, state, &path, &value);
+        return;
+    }
+    if path.starts_with("/api/library/") {
+        personal_api::handle(request, state, &path, &value);
+        return;
+    }
     match path.as_str() {
         "/api/updates/check" => respond_json(
             request,
@@ -421,6 +541,9 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
             }
             state.generation.fetch_add(1, Ordering::SeqCst);
             let old = current.take();
+            if let Some(old) = &old {
+                old.stop();
+            }
             drop(current);
             drop(old);
             respond_json(request, 200, json!({"stopped":true}));
@@ -428,6 +551,10 @@ fn handle_request(mut request: Request, state: &Arc<DesktopState>) {
         "/api/played" => {
             let current = state.current.lock().expect("playback lock").clone();
             if let Some(current) = current.filter(|p| value["playback_id"] == p.id) {
+                if current.mode != "live" {
+                    respond_json(request, 200, json!(state.preferences.get()));
+                    return;
+                }
                 match state
                     .preferences
                     .update(&json!({"played":current.channel_id}))
@@ -457,12 +584,21 @@ fn playback_snapshot(state: &DesktopState) -> Value {
         .map(|events| events.clone())
         .unwrap_or_default();
     let network = current.server.network_summary();
-    let assessment = crate::report::assess_playback(
-        &events,
-        30,
-        current.drm,
-        network["license_http_successes"].as_u64().unwrap_or(0) > 0,
-    );
+    let local_clearkey = current
+        .server
+        .state
+        .personal
+        .as_ref()
+        .and_then(|p| p.drm.as_ref())
+        .is_some_and(|d| d.system == "org.w3.clearkey" && d.local.is_some());
+    let license = if local_clearkey {
+        crate::report::LicenseEvidence::LocalClearKey
+    } else if network["license_http_successes"].as_u64().unwrap_or(0) > 0 {
+        crate::report::LicenseEvidence::Http
+    } else {
+        crate::report::LicenseEvidence::None
+    };
+    let assessment = crate::report::assess_playback_with_license(&events, 30, current.drm, license);
     json!({
         "channel_id": current.channel_id,
         "events": events,
@@ -473,22 +609,59 @@ fn playback_snapshot(state: &DesktopState) -> Value {
 }
 
 fn play(request: Request, state: &DesktopState, value: &Value) {
-    let Some(channel) = value["channel_id"]
-        .as_str()
-        .and_then(|id| state.catalog.channel(id))
+    let id = value["channel_id"].as_str().unwrap_or("");
+    if state.catalog.personal.is_hidden(id) {
+        respond_json(
+            request,
+            400,
+            json!({"error":"channel_hidden","message":"Il canale è nascosto. Ripristinalo dalle impostazioni."}),
+        );
+        return;
+    }
+    let generation = state.generation.fetch_add(1, Ordering::SeqCst) + 1;
+    let personal = if id.starts_with("personal_") {
+        match state.catalog.personal.playback(
+            id,
+            value["mode"].as_str().unwrap_or(""),
+            value["event"].as_str().unwrap_or(""),
+            value["position"].as_f64(),
+        ) {
+            Ok(playback) => Some(playback),
+            Err(error) => {
+                respond_json(
+                    request,
+                    400,
+                    json!({"error":"personal_unavailable","message":error.to_string()}),
+                );
+                return;
+            }
+        }
+    } else {
+        None
+    };
+    let Some(channel) = personal
+        .as_ref()
+        .map(|p| p.channel.channel.clone())
+        .or_else(|| state.catalog.channel(id))
     else {
         respond_json(request, 400, json!({"error":"channel_unknown"}));
         return;
     };
-    let generation = state.generation.fetch_add(1, Ordering::SeqCst) + 1;
-    let mut stream = match state.resolver.resolve(&channel.stream_channel()) {
+    let mut stream = match personal
+        .as_ref()
+        .map(|p| Ok(p.stream.clone()))
+        .unwrap_or_else(|| state.resolver.resolve(&channel.stream_channel()))
+    {
         Ok(stream) => stream,
         Err(_) => {
             respond_json(request, 502, json!({"error":"channel_unavailable"}));
             return;
         }
     };
-    let audio = if channel.kind == crate::model::MediaKind::Radio && stream.mime_type.is_none() {
+    let audio = if personal.is_none()
+        && channel.kind == crate::model::MediaKind::Radio
+        && stream.mime_type.is_none()
+    {
         match crate::radio_audio::AudioSession::connect(&stream.url) {
             Ok(crate::radio_audio::Connection::Audio(audio)) => {
                 stream.mime_type = Some(audio.mime.clone());
@@ -507,13 +680,58 @@ fn play(request: Request, state: &DesktopState, value: &Value) {
         None
     };
     let drm = stream.drm.is_some();
-    let uri = audio
+    let playback_id = uuid::Uuid::new_v4().to_string();
+    let progressive = personal.is_some()
+        && !drm
+        && stream
+            .mime_type
+            .as_deref()
+            .is_some_and(|m| m.starts_with("video/") || m.starts_with("audio/"));
+    let uri = if progressive {
+        format!("{}/stream/{playback_id}", state.origin)
+    } else {
+        audio
+            .as_ref()
+            .map(|a| format!("{}/audio/{}", state.origin, a.capability))
+            .unwrap_or_else(|| stream.url.clone())
+    };
+    let cancel = Arc::new(AtomicBool::new(false));
+    let policy = personal
         .as_ref()
-        .map(|a| format!("{}/audio/{}", state.origin, a.capability))
-        .unwrap_or_else(|| stream.url.clone());
-    let session = json!({"url":uri, "mime_type":stream.mime_type,"continuous":audio.is_some(),
-        "drm":stream.drm.as_ref().map(|_| json!({"key_system":"com.widevine.alpha"}))});
-    let server = match HarnessServer::start(channel.stream_channel(), stream, 0, "relay") {
+        .map(|p| p.policy.for_playback(cancel.clone()));
+    let key_system = policy
+        .as_ref()
+        .and_then(|p| p.key_system())
+        .unwrap_or("com.widevine.alpha");
+    let clear_keys = match policy
+        .as_ref()
+        .and_then(|p| p.drm.as_ref())
+        .map(|d| d.local_clear_keys())
+        .transpose()
+    {
+        Ok(keys) => keys.flatten(),
+        Err(_) => {
+            respond_json(request, 400, json!({"error":"personal_drm_invalid"}));
+            return;
+        }
+    };
+    let session = json!({"url":uri,"mime_type":stream.mime_type,"continuous":audio.is_some()||progressive,
+        "drm":if drm{Some(json!({"key_system":key_system,"clear_keys":clear_keys}))}else{None},
+        "mode":personal.as_ref().map(|p|p.mode.as_str()).unwrap_or("live"),
+        "title":personal.as_ref().map(|p|p.title.as_str()).unwrap_or(&channel.name),
+        "position":personal.as_ref().map(|p|p.position).unwrap_or(0.0),
+        "duration":personal.as_ref().map(|p|p.duration).unwrap_or(0.0),
+        "base_offset":personal.as_ref().map(|p|p.base_offset).unwrap_or(0.0),
+        "event":personal.as_ref().map(|p|p.event.as_str()).unwrap_or(""),
+        "watch_revision":personal.as_ref().map(|p|p.watch_revision),
+        "seekable":personal.as_ref().is_none_or(|p|p.seekable)});
+    let server = match HarnessServer::start_with_policy(
+        channel.stream_channel(),
+        stream,
+        0,
+        "relay",
+        policy,
+    ) {
         Ok(server) => server,
         Err(_) => {
             respond_json(request, 500, json!({"error":"player_unavailable"}));
@@ -527,8 +745,13 @@ fn play(request: Request, state: &DesktopState, value: &Value) {
         .1
         .to_owned();
     let playback = Arc::new(Playback {
+        mode: personal
+            .as_ref()
+            .map(|p| p.mode.clone())
+            .unwrap_or_else(|| "live".into()),
+        cancel,
         audio,
-        id: uuid::Uuid::new_v4().to_string(),
+        id: playback_id,
         channel_id: channel.id.clone(),
         drm,
         token,
@@ -540,13 +763,20 @@ fn play(request: Request, state: &DesktopState, value: &Value) {
         respond_json(request, 409, json!({"error":"playback_changed"}));
         return;
     }
-    let previous = guard.replace(playback.clone());
+    let old = guard.replace(playback.clone());
+    if let Some(old) = &old {
+        old.stop();
+    }
     drop(guard);
-    drop(previous);
+    drop(old);
+    let display = personal
+        .as_ref()
+        .map(|p| json!(p.channel))
+        .unwrap_or_else(|| json!(channel));
     respond_json(
         request,
         200,
-        json!({"playback_id":playback.id, "channel":channel, "stream":session}),
+        json!({"playback_id":playback.id,"channel":display,"stream":session}),
     );
 }
 
@@ -598,41 +828,113 @@ fn relay_playback(request: Request, state: &DesktopState, path: &str, body: Vec<
 }
 
 fn channel_art(request: Request, state: &DesktopState, id: &str) {
+    if id.starts_with("personal_") {
+        personal_api::artwork(request, state, id);
+        return;
+    }
     if state.catalog.channel(id).is_none() {
         respond_json(request, 404, json!({"error":"channel_unknown"}));
         return;
     }
     let cache = state.directory.join("artwork").join(format!("{id}.png"));
     if let Ok(bytes) = fs::read(&cache) {
-        if bytes.starts_with(b"\x89PNG\r\n\x1a\n") && bytes.len() <= 1024 * 1024 {
-            respond(request, 200, "image/png", bytes, vec![]);
+        if let Some(mime) = artwork_mime(&bytes) {
+            respond(request, 200, mime, bytes, vec![]);
             return;
         }
     }
-    let result = (|| -> Result<Vec<u8>> {
-        let url = state.guide.logo_url(id).context("no_artwork")?;
-        let response = state
-            .artwork
-            .get(url)
-            .send()
-            .map_err(|_| anyhow!("artwork_network"))?;
-        if !response.status().is_success() {
-            return Err(anyhow!("artwork_response"));
-        }
-        let mut bytes = vec![];
-        response
-            .take(1024 * 1024 + 1)
-            .read_to_end(&mut bytes)
-            .map_err(|_| anyhow!("artwork_read"))?;
-        if !bytes.starts_with(b"\x89PNG\r\n\x1a\n") || bytes.len() > 1024 * 1024 {
-            return Err(anyhow!("artwork_type"));
-        }
+    if let Ok(bytes) = fetch_artwork(&state.artwork, state.guide.logo_candidates(id)) {
         let _ = fs::write(cache, &bytes);
-        Ok(bytes)
-    })();
-    match result {
-        Ok(bytes) => respond(request, 200, "image/png", bytes, vec![]),
-        Err(_) => respond_json(request, 404, json!({"error":"artwork_unavailable"})),
+        respond(request, 200, artwork_mime(&bytes).unwrap(), bytes, vec![]);
+        return;
+    }
+    respond_json(request, 404, json!({"error":"artwork_unavailable"}));
+}
+
+fn public_channel_art(request: Request, state: &DesktopState, candidates: Vec<String>) {
+    use sha2::Digest;
+    let directory = state.directory.join("artwork/public");
+    let key = format!("{:x}.img", sha2::Sha256::digest(candidates.join("\n")));
+    let cache = directory.join(&key);
+    if let Ok(bytes) = fs::read(&cache) {
+        if let Some(mime) = artwork_mime(&bytes) {
+            respond(request, 200, mime, bytes, vec![]);
+            return;
+        }
+    }
+    if let Ok(bytes) = fetch_artwork(&state.artwork, candidates) {
+        if fs::create_dir_all(&directory).is_ok() && fs::write(&cache, &bytes).is_ok() {
+            let mut files = fs::read_dir(&directory)
+                .into_iter()
+                .flatten()
+                .flatten()
+                .filter_map(|entry| {
+                    let name = entry.file_name().to_string_lossy().into_owned();
+                    let stem = name.strip_suffix(".img")?;
+                    if stem.len() != 64 || !stem.bytes().all(|b| b.is_ascii_hexdigit()) {
+                        return None;
+                    }
+                    let metadata = entry.metadata().ok()?;
+                    Some((entry.path(), metadata.len(), metadata.modified().ok()))
+                })
+                .collect::<Vec<_>>();
+            files.sort_by_key(|(_, _, time)| *time);
+            let mut total = files.iter().map(|(_, length, _)| *length).sum::<u64>();
+            for (path, length, _) in files {
+                if total <= 64 * 1024 * 1024 {
+                    break;
+                }
+                if path != cache && fs::remove_file(path).is_ok() {
+                    total = total.saturating_sub(length);
+                }
+            }
+        }
+        respond(request, 200, artwork_mime(&bytes).unwrap(), bytes, vec![]);
+        return;
+    }
+    respond_json(request, 404, json!({"error":"artwork_unavailable"}));
+}
+
+fn fetch_artwork(client: &Client, candidates: Vec<String>) -> Result<Vec<u8>> {
+    for url in candidates {
+        let result = (|| -> Result<Vec<u8>> {
+            let response = client
+                .get(url)
+                .send()
+                .map_err(|_| anyhow!("artwork_network"))?;
+            if !response.status().is_success() {
+                return Err(anyhow!("artwork_response"));
+            }
+            let mut bytes = vec![];
+            response
+                .take(1024 * 1024 + 1)
+                .read_to_end(&mut bytes)
+                .map_err(|_| anyhow!("artwork_read"))?;
+            if artwork_mime(&bytes).is_none() {
+                return Err(anyhow!("artwork_type"));
+            }
+            Ok(bytes)
+        })();
+        if let Ok(bytes) = result {
+            return Ok(bytes);
+        }
+    }
+    Err(anyhow!("artwork_unavailable"))
+}
+
+fn artwork_mime(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.len() > 1024 * 1024 {
+        None
+    } else if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        Some("image/png")
+    } else if bytes.starts_with(b"\xff\xd8\xff") {
+        Some("image/jpeg")
+    } else if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
+        Some("image/gif")
+    } else if bytes.starts_with(b"RIFF") && bytes.get(8..12) == Some(b"WEBP") {
+        Some("image/webp")
+    } else {
+        None
     }
 }
 
@@ -663,4 +965,82 @@ fn respond(
         }
     }
     let _ = request.respond(response);
+}
+
+#[cfg(test)]
+mod artwork_tests {
+    use super::*;
+
+    #[test]
+    fn unavailable_catalogue_logo_falls_back_to_guide_with_android_identity() {
+        use base64::Engine;
+        let png = base64::engine::general_purpose::STANDARD
+            .decode(include_str!("../tests/fixtures/guide-logo.png.base64").trim())
+            .unwrap();
+        let expected = png.clone();
+        let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
+        let address = server.server_addr().to_ip().unwrap();
+        let worker = std::thread::spawn(move || {
+            for (path, status) in [("/catalogue", 404), ("/guide", 200)] {
+                let request = server
+                    .recv_timeout(Duration::from_secs(5))
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(request.url(), path);
+                assert_eq!(
+                    request
+                        .headers()
+                        .iter()
+                        .find(|h| h.field.equiv("User-Agent"))
+                        .unwrap()
+                        .value
+                        .as_str(),
+                    crate::providers::USER_AGENT
+                );
+                request
+                    .respond(tiny_http::Response::from_data(png.clone()).with_status_code(status))
+                    .unwrap();
+            }
+        });
+        let client = Client::builder()
+            .no_proxy()
+            .user_agent(crate::providers::USER_AGENT)
+            .build()
+            .unwrap();
+        assert_eq!(
+            fetch_artwork(
+                &client,
+                vec![
+                    format!("http://{address}/catalogue"),
+                    format!("http://{address}/guide")
+                ]
+            )
+            .unwrap(),
+            expected
+        );
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn catalogue_image_types_are_sniffed_and_documents_or_oversized_files_rejected() {
+        for (bytes, mime) in [
+            (b"\x89PNG\r\n\x1a\n".as_slice(), "image/png"),
+            (b"\xff\xd8\xff".as_slice(), "image/jpeg"),
+            (b"GIF87a".as_slice(), "image/gif"),
+            (b"GIF89a".as_slice(), "image/gif"),
+            (b"RIFF\x04\x00\x00\x00WEBP".as_slice(), "image/webp"),
+        ] {
+            assert_eq!(artwork_mime(bytes), Some(mime));
+        }
+        for bytes in [
+            b"<html>unavailable</html>".as_slice(),
+            b"<svg onload='x'/>",
+            b"RIFF",
+        ] {
+            assert_eq!(artwork_mime(bytes), None);
+        }
+        let mut huge = vec![0; 1024 * 1024 + 1];
+        huge[..8].copy_from_slice(b"\x89PNG\r\n\x1a\n");
+        assert_eq!(artwork_mime(&huge), None);
+    }
 }

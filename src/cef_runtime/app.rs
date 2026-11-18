@@ -194,10 +194,33 @@ wrap_client! {
         fn display_handler(&self) -> Option<DisplayHandler> {
             Some(LumeDisplayHandler::new(self.state.clone()))
         }
+        fn download_handler(&self) -> Option<DownloadHandler> {
+            Some(LumeDownload::new(self.config.origin.clone()))
+        }
         fn load_handler(&self) -> Option<LoadHandler> {
             Some(LumeLoadHandler::new())
         }
     }
+}
+
+wrap_download_handler! {
+    struct LumeDownload { origin: String, }
+    impl DownloadHandler {
+        fn can_download(&self, _browser: Option<&mut Browser>, url: Option<&CefString>, request_method: Option<&CefString>) -> i32 {
+            i32::from(request_method.is_some_and(|m| m.to_string()=="GET") && url.is_some_and(|u| backup_download(&self.origin,&u.to_string())))
+        }
+        fn on_before_download(&self, _browser: Option<&mut Browser>, download_item: Option<&mut DownloadItem>, _suggested_name: Option<&CefString>, callback: Option<&mut BeforeDownloadCallback>) -> i32 {
+            if download_item.is_some_and(|item| backup_download(&self.origin,&CefString::from(&item.url()).to_string())) {
+                if let Some(callback)=callback {callback.cont(None,1);return 1;}
+            }
+            0
+        }
+    }
+}
+fn backup_download(origin: &str, url: &str) -> bool {
+    url.strip_prefix(&format!("{origin}/backup/"))
+        .and_then(|v| v.strip_suffix("/Lume.lumebackup"))
+        .is_some_and(|id| id.len() == 32 && id.bytes().all(|b| b.is_ascii_hexdigit()))
 }
 
 wrap_life_span_handler! {

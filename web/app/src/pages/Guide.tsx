@@ -1,3 +1,8 @@
+import { personalizedChannels } from '../domain';
+import { useState } from 'react';
+import { useStore } from '../store';
+import { library, readSession, writeSession } from '../personal';
+import { PersonalGuide } from './PersonalGuide';
 import { app, play, showProgramme } from '../app';
 import { date, filterChannels, range, schedule, time } from '../domain';
 import { EmptyState, Heading, Icon, StationLogo } from '../components/common';
@@ -15,8 +20,11 @@ function shift(direction: number) {
     );
     app.set({ guideStart: Math.floor(guideStart / 1_800_000) * 1_800_000 });
 }
-export function GuidePage() {
-    const state = app.get();
+export function BuiltinGuidePage() {
+    const state = {
+        ...app.get(),
+        channels: personalizedChannels(app.get().channels, app.get().preferences),
+    };
     const channels = filterChannels(state.channels, {
         favoritesOnly: state.favoritesOnly,
         favorites: state.preferences.favorites,
@@ -170,6 +178,55 @@ export function GuidePage() {
                 />
             )}
             {state.guide.error && <p className="notice">{state.guide.error}</p>}
+        </>
+    );
+}
+
+export function GuidePage() {
+    const state = useStore(library);
+    const [selected, select] = useState(() => readSession<string>('guide-source', 'builtin'));
+    const source = state.sources.find((source) => source.enabled && source.id === selected);
+    return (
+        <>
+            {state.sources.some((s) => s.enabled) && (
+                <div className="library-source-bar">
+                    <label>
+                        Guida della lista{' '}
+                        <select
+                            className="category-select"
+                            value={source?.id || 'builtin'}
+                            onChange={(e) => {
+                                select(e.target.value);
+                                writeSession('guide-source', e.target.value);
+                            }}
+                        >
+                            <option value="builtin">Catalogo Lume</option>
+                            {state.sources
+                                .filter((s) => s.enabled)
+                                .map((s) => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.name}
+                                    </option>
+                                ))}
+                        </select>
+                    </label>
+                </div>
+            )}
+            {source ? (
+                <>
+                    <Heading
+                        title={`La guida di ${source.name}.`}
+                        subtitle={
+                            source.guide.origin === 'lume'
+                                ? 'La programmazione disponibile dalla guida Lume.'
+                                : 'Programmi, storico e archivio disponibili per questa lista.'
+                        }
+                    />
+                    <PersonalGuide key={source.id} source={source} />
+                </>
+            ) : (
+                <BuiltinGuidePage />
+            )}
         </>
     );
 }

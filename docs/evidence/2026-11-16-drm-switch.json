@@ -1,0 +1,109 @@
+{
+  "date": "2026-11-16",
+  "runtime": "embedded_cef",
+  "platform": "macos-arm64",
+  "cef_version": "150.0.19+gcf60f42+chromium-150.0.7871.252",
+  "issue": "ClearKey and license-system maps persisted when switching to Widevine",
+  "real_shaka_regression": {
+    "failed_before_reset": true,
+    "passed_after_reset": true,
+    "decoded_synthetic_cenc_video": true,
+    "inspected_effective_configuration": true
+  },
+  "native_sequence": "Personal ClearKey, builtin Rai 4, then Mediaset in the persistent desktop player",
+  "native_runs": [
+    {
+      "channel": "canale5",
+      "assessment": {
+        "audio_audibility": "not_verified",
+        "audio_decoded_bytes": 486746,
+        "decoded_video_frames_delta": 389,
+        "drm_required": true,
+        "drm_verified": true,
+        "elapsed_server_seconds": 38.001,
+        "encrypted_event_observed": true,
+        "license_http_success": true,
+        "license_local_clearkey": false,
+        "progress_seconds": 37.978,
+        "required_seconds": 30,
+        "status": "verified",
+        "usable_key_observed": true,
+        "video_dimensions_observed": true,
+        "video_frames_observed": 478
+      },
+      "network": {
+        "document_requests": 0,
+        "failed_requests": 0,
+        "license_http_successes": 2,
+        "media_http_successes": 43,
+        "script_requests": 0,
+        "session_requests": 0,
+        "transferred_bytes": 18899537
+      }
+    },
+    {
+      "channel": "italia1",
+      "assessment": {
+        "audio_audibility": "not_verified",
+        "audio_decoded_bytes": 678908,
+        "decoded_video_frames_delta": 426,
+        "drm_required": true,
+        "drm_verified": true,
+        "elapsed_server_seconds": 53.993,
+        "encrypted_event_observed": true,
+        "license_http_success": true,
+        "license_local_clearkey": false,
+        "progress_seconds": 53.961,
+        "required_seconds": 30,
+        "status": "verified",
+        "usable_key_observed": true,
+        "video_dimensions_observed": true,
+        "video_frames_observed": 519
+      },
+      "network": {
+        "document_requests": 0,
+        "failed_requests": 0,
+        "license_http_successes": 2,
+        "media_http_successes": 56,
+        "script_requests": 0,
+        "session_requests": 0,
+        "transferred_bytes": 14132654
+      }
+    },
+    {
+      "channel": "rete4",
+      "assessment": {
+        "audio_audibility": "not_verified",
+        "audio_decoded_bytes": 726365,
+        "decoded_video_frames_delta": 389,
+        "drm_required": true,
+        "drm_verified": true,
+        "elapsed_server_seconds": 57.994,
+        "encrypted_event_observed": true,
+        "license_http_success": true,
+        "license_local_clearkey": false,
+        "progress_seconds": 57.969,
+        "required_seconds": 30,
+        "status": "verified",
+        "usable_key_observed": true,
+        "video_dimensions_observed": true,
+        "video_frames_observed": 477
+      },
+      "network": {
+        "document_requests": 0,
+        "failed_requests": 0,
+        "license_http_successes": 2,
+        "media_http_successes": 59,
+        "script_requests": 0,
+        "session_requests": 0,
+        "transferred_bytes": 22026334
+      }
+    }
+  ],
+  "audible_output": "not_manually_verified",
+  "protected_image_capture": "not_verified",
+  "source_sha256": {
+    "web/app/src/playback.ts": "4305d8747109806a4410086f492641cefeb020f9328970a5a86198d4f04902d2",
+    "web/app/bundle/app.js": "42a9e5b758b276f59c6d371a00782801cb8b3ec5e67415d7fb49a079da250eca"
+  }
+}

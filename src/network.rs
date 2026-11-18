@@ -18,7 +18,7 @@ pub fn public_host(url: &Url) -> bool {
             .any(|suffix| host.ends_with(suffix))
 }
 
-fn public_ip(ip: IpAddr) -> bool {
+pub(crate) fn public_ip(ip: IpAddr) -> bool {
     match ip.to_canonical() {
         IpAddr::V4(ip) => {
             let [a, b, c, _] = ip.octets();

@@ -17,7 +17,7 @@ const files = {
         'text/javascript',
     ],
     ...Object.fromEntries(
-        ['logo-light.svg', 'logo-dark.svg', 'symbol.svg'].map((name) => [
+        ['logo-light.svg', 'logo-dark.svg', 'symbol.svg', 'tmdb.svg'].map((name) => [
             `/assets/${name}`,
             [`web/app/assets/${name}`, 'image/svg+xml'],
         ]),
@@ -35,7 +35,12 @@ createServer(async (request, response) => {
     }
     try {
         const bytes = await readFile(resolve(root, file[0]));
-        response.writeHead(200, { 'Content-Type': file[1], 'Cache-Control': 'no-store' });
+        response.writeHead(200, {
+            'Content-Type': file[1],
+            'Cache-Control': 'no-store',
+            'Content-Security-Policy':
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'",
+        });
         response.end(bytes);
     } catch {
         response.writeHead(404);

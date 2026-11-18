@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pub mod browser;
 pub mod catalog;
+pub mod companion;
 pub mod desktop;
 pub mod guide;
 pub mod model;
 pub mod network;
+pub mod personal;
 pub mod preferences;
 pub mod providers;
+pub(crate) mod public_guide;
 pub mod radio;
 pub mod radio_audio;
 pub mod report;

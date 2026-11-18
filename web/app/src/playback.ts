@@ -3,17 +3,25 @@ import { createStore } from './store';
 import { prepareWidevine, widevineMessage } from './widevine';
 import { RecoveryController } from './recovery';
 import { isRadio } from './domain';
+import type { ImportJob, PersonalSource } from './personal';
 import type { ShakaPlayer } from './runtime';
 import type { Channel, PlaybackPhase, PlaybackState, Preferences, Session } from './types';
 
 interface Dependencies {
-    channel(id: string): Channel | undefined;
+    channel(id: string): Channel | undefined | Promise<Channel | undefined>;
     preferences(): Preferences;
+    changedPreferences?(patch: Partial<Preferences>): Promise<unknown>;
     played(id: string): Promise<unknown>;
     watch(): void;
     stopped(): void;
 }
 const initial: PlaybackState = {
+    mode: 'live',
+    contentTitle: '',
+    position: 0,
+    duration: 0,
+    seekable: false,
+    ended: false,
     nowPlaying: '',
     current: null,
     channel: null,
@@ -48,10 +56,16 @@ export class PlaybackController {
     private sampleTimer?: ReturnType<typeof setInterval>;
     private wantsToPlay = false;
     private needsReload = false;
+    private refreshedSource = '';
+    private lookupGeneration = 0;
+    private target: { mode?: string; event?: string; position?: number } = {};
+    private watchQueue = Promise.resolve();
+    private lastSaved = 0;
     private readonly recovery = new RecoveryController({
         retry: () => {
             const id = this.store.get().current;
-            if (id && this.wantsToPlay) void this.load(id, true);
+            if (id && this.wantsToPlay)
+                void this.load(id, true, { ...this.target, position: this.store.get().position });
         },
         waiting: (attempt, offline) => {
             this.needsReload = true;
@@ -121,6 +135,8 @@ export class PlaybackController {
         video.addEventListener(
             'error',
             () => {
+                this.updatePosition();
+                this.saveWatch();
                 if (!this.pending && this.session?.stream.continuous && this.wantsToPlay)
                     this.recovery.failed(video.error?.code !== 3 && video.error?.code !== 4);
             },
@@ -129,7 +145,14 @@ export class PlaybackController {
         video.addEventListener(
             'ended',
             () => {
-                if (!this.pending && this.wantsToPlay) this.recovery.failed(true);
+                if (this.pending) return;
+                if (this.store.get().mode !== 'live') {
+                    this.updatePosition();
+                    this.saveWatch(true);
+                    this.wantsToPlay = false;
+                    this.recovery.stop();
+                    this.store.set({ ended: true, paused: true, phase: 'paused' });
+                } else if (this.wantsToPlay) this.recovery.failed(true);
             },
             { signal: events.signal },
         );
@@ -137,6 +160,11 @@ export class PlaybackController {
         const offline = () => this.networkChanged(false);
         window.addEventListener('online', online);
         window.addEventListener('offline', offline);
+        const leaving = () => {
+            this.updatePosition();
+            this.saveWatch(false, true);
+        };
+        window.addEventListener('pagehide', leaving);
         video.addEventListener(
             'encrypted',
             () => this.emit({ kind: 'encrypted', encrypted: true, encrypted_events: 1 }),
@@ -147,12 +175,16 @@ export class PlaybackController {
             () => this.store.set({ volume: video.volume, muted: video.muted }),
             { signal: events.signal },
         );
+        video.addEventListener('timeupdate', () => this.updatePosition(), {
+            signal: events.signal,
+        });
         this.applyPreferences();
         return () => {
             events.abort();
             this.recovery.stop();
             window.removeEventListener('online', online);
             window.removeEventListener('offline', offline);
+            window.removeEventListener('pagehide', leaving);
             ++this.generation;
             this.loadController?.abort();
             clearInterval(this.sampleTimer);
@@ -238,11 +270,14 @@ export class PlaybackController {
                 );
             });
             player.configure({
-                preferredAudioLanguage: 'it',
+                preferredAudioLanguage:
+                    this.deps.preferences().audio_language || navigator.language || 'it',
                 streaming: { bufferingGoal: 15, rebufferingGoal: 2 },
                 manifest: { retryParameters: { maxAttempts: 3, baseDelay: 800, backoffFactor: 2 } },
             });
             player.addEventListener('error', (event) => {
+                this.updatePosition();
+                this.saveWatch();
                 if (this.session?.stream.continuous) return;
                 const error = event.detail as { code?: number } | undefined;
                 if (this.pending || [7000, 7001].includes(error?.code || 0)) return;
@@ -298,19 +333,46 @@ export class PlaybackController {
         return this.playerPromise;
     }
 
-    applyPreferences() {
+    private appliedTrackPreferences = '';
+    applyPreferences(forceTracks = false) {
         const preferences = this.deps.preferences();
         if (this.video) {
             this.video.volume = preferences.volume;
             this.video.muted = preferences.muted;
         }
         this.store.set({ volume: preferences.volume, muted: preferences.muted });
+        const language = preferences.audio_language || navigator.language || 'it';
+        const subtitleLanguage = preferences.subtitle_language || navigator.language || 'it';
         this.player?.configure({
+            preferredAudioLanguage: language,
+            preferredTextLanguage: preferences.subtitle_mode === 'language' ? subtitleLanguage : '',
             abr: { enabled: true },
             restrictions: {
                 maxHeight: preferences.quality === 'auto' ? Infinity : Number(preferences.quality),
             },
         });
+        this.applyTrackPreferences(forceTracks);
+    }
+    private applyTrackPreferences(force: boolean) {
+        const p = this.deps.preferences();
+        const key = JSON.stringify([p.audio_language, p.subtitle_mode, p.subtitle_language]);
+        if (!this.player || this.pending || (!force && key === this.appliedTrackPreferences))
+            return;
+        this.appliedTrackPreferences = key;
+        this.player.selectAudioLanguage(p.audio_language || navigator.language || 'it');
+        if (p.subtitle_mode === 'off') this.player.setTextTrackVisibility(false);
+        else if (p.subtitle_mode === 'language') {
+            const preferred = (p.subtitle_language || navigator.language || 'it').toLowerCase();
+            const track =
+                this.player.getTextTracks().find((t) => t.language.toLowerCase() === preferred) ||
+                this.player
+                    .getTextTracks()
+                    .find(
+                        (t) => t.language.split('-')[0].toLowerCase() === preferred.split('-')[0],
+                    );
+            if (track) this.player.selectTextTrack(track);
+            this.player.setTextTrackVisibility(!!track);
+        }
     }
     private updateTracks() {
         if (this.session?.stream.continuous) {
@@ -334,18 +396,33 @@ export class PlaybackController {
         });
     }
 
-    async load(id: string, automatic = false) {
-        const channel = this.deps.channel(id);
+    async load(
+        id: string,
+        automatic = false,
+        target?: { mode?: string; event?: string; position?: number },
+    ) {
+        const lookup = ++this.lookupGeneration;
+        let channel: Channel | undefined;
+        try {
+            channel = await this.deps.channel(id);
+        } catch {
+            channel = undefined;
+        }
+        if (lookup !== this.lookupGeneration) return;
         if (!channel || !this.video) return;
         if (
             !automatic &&
+            !target &&
             id === this.store.get().current &&
             ['playing', 'paused', 'buffering'].includes(this.store.get().phase)
         ) {
             this.deps.watch();
             return;
         }
+        this.saveWatch();
+        this.target = target || (automatic ? this.target : {});
         if (!automatic) {
+            this.refreshedSource = '';
             this.recovery.start();
             this.wantsToPlay = true;
         }
@@ -371,13 +448,17 @@ export class PlaybackController {
         this.deps.watch();
         this.phase(
             'loading',
-            `Sintonizzazione su ${channel.name}…`,
-            'Ancora un istante, il tuo canale sta arrivando.',
+            channel.content === 'vod' || this.target.mode === 'archive'
+                ? `Caricamento di ${channel.name}…`
+                : `Sintonizzazione su ${channel.name}…`,
+            channel.content === 'vod' || this.target.mode === 'archive'
+                ? 'Preparazione del video.'
+                : 'Ancora un istante, il tuo canale sta arrivando.',
         );
         try {
             const signal = this.loadController.signal;
             const session = await bounded(
-                api<Session>('/api/play', { channel_id: id }, { signal }),
+                api<Session>('/api/play', { channel_id: id, ...this.target }, { signal }),
                 60_000,
                 signal,
             );
@@ -388,6 +469,18 @@ export class PlaybackController {
             await bounded(player.unload(), 10_000, signal);
             if (generation !== this.generation) return;
             this.session = session;
+            this.target = {
+                mode: session.stream.mode || 'live',
+                event: session.stream.event || '',
+            };
+            this.store.set({
+                mode: session.stream.mode || 'live',
+                contentTitle: session.stream.title || channel.name,
+                position: session.stream.position || 0,
+                duration: session.stream.duration || 0,
+                seekable: session.stream.seekable !== false,
+                ended: false,
+            });
             this.video.removeAttribute('src');
             this.video.load();
             let capabilities = await bounded(
@@ -402,7 +495,11 @@ export class PlaybackController {
                 (!capabilities.avc_mse_supported || !capabilities.aac_mse_supported)
             )
                 throw { code: 'codec_unavailable' };
-            if (session.stream.drm && !capabilities.widevine_available) {
+            if (
+                session.stream.drm &&
+                session.stream.drm.key_system !== 'org.w3.clearkey' &&
+                !capabilities.widevine_available
+            ) {
                 this.emit({ kind: 'drm_setup', status: 'waiting' });
                 capabilities = await prepareWidevine(capabilities, {
                     signal,
@@ -434,20 +531,45 @@ export class PlaybackController {
                 });
                 this.store.set({ widevine: null });
             }
+            // Shaka merges DRM maps. Empty objects keep previous keys and
+            // license systems; undefined restores each map to its default.
+            player.configure({ drm: { clearKeys: undefined, servers: undefined } });
             player.configure({
                 drm: {
+                    // Explicit playlist keys override the DRM advertised by DASH.
+                    clearKeys: session.stream.drm?.clear_keys || {},
                     servers: session.stream.drm
-                        ? { 'com.widevine.alpha': 'lume-license:license' }
+                        ? {
+                              [session.stream.drm.key_system || 'com.widevine.alpha']:
+                                  'lume-license:license',
+                          }
                         : {},
                 },
             });
             this.applyPreferences();
-            if (session.stream.continuous) this.video.src = session.stream.url;
-            else
+            if (session.stream.continuous) {
+                this.video.addEventListener(
+                    'loadedmetadata',
+                    () => {
+                        if (
+                            generation === this.generation &&
+                            this.video &&
+                            session.stream.mode !== 'live'
+                        ) {
+                            this.video.currentTime = session.stream.position || 0;
+                            this.updatePosition();
+                        }
+                    },
+                    { once: true, signal },
+                );
+                this.video.src = session.stream.url;
+            } else
                 await bounded(
                     player.load(
                         session.stream.url,
-                        undefined,
+                        session.stream.mode && session.stream.mode !== 'live'
+                            ? session.stream.position || 0
+                            : undefined,
                         session.stream.mime_type || undefined,
                     ),
                     45_000,
@@ -456,12 +578,17 @@ export class PlaybackController {
             if (generation !== this.generation) return;
             this.emit({ kind: 'loaded', drm_configured: !!session.stream.drm });
             this.pending = false;
-            this.applyPreferences();
+            this.applyPreferences(true);
             if (this.wantsToPlay) await this.resume(false);
             else this.phase('paused');
             if (generation !== this.generation) return;
             this.updateTracks();
             this.sampleTimer = setInterval(() => {
+                this.updatePosition();
+                if (Date.now() - this.lastSaved >= 5000) {
+                    this.saveWatch();
+                    this.lastSaved = Date.now();
+                }
                 if (this.session && this.video && this.video.readyState >= 2)
                     this.emit(this.sample());
                 if (isRadio(channel)) void this.pollRadio(generation, session.playback_id);
@@ -479,6 +606,7 @@ export class PlaybackController {
                 { kind: 'error', ...window.LumePlayback.sanitizedError(error) },
                 pendingSession,
             );
+            if (await this.refreshExpiredSource(error, channel, this.generation, lookup)) return;
             if (failure.code === 'widevine_restart')
                 this.phase(
                     'restart',
@@ -506,6 +634,82 @@ export class PlaybackController {
             else this.recovery.failed(true);
         }
     }
+    private async refreshExpiredSource(
+        error: unknown,
+        channel: Channel,
+        generation: number,
+        lookup: number,
+    ) {
+        const failure = error as { code?: number; data?: unknown[] };
+        if (
+            failure.code !== 1001 ||
+            ![401, 403, 404, 410].includes(Number(failure.data?.[0])) ||
+            !channel.source_id ||
+            this.refreshedSource === channel.source_id
+        )
+            return false;
+        this.refreshedSource = channel.source_id;
+        const controller = new AbortController();
+        this.loadController = controller;
+        const signal = controller.signal;
+        const timeout = setTimeout(() => controller.abort(), 60_000);
+        try {
+            const source = (
+                await api<{ sources: PersonalSource[] }>('/api/library', undefined, { signal })
+            ).sources.find((s) => s.id === channel.source_id);
+            if (generation !== this.generation || lookup !== this.lookupGeneration) return true;
+            if (!source?.enabled || source.file || Date.now() - source.checked_at < 30_000)
+                return false;
+            this.recovery.start();
+            this.phase(
+                'loading',
+                'Aggiorno la lista…',
+                'L’indirizzo del canale potrebbe essere cambiato.',
+            );
+            const deadline = Date.now() + 60_000;
+            const job = await api<ImportJob>(
+                '/api/library/refresh',
+                { id: channel.source_id },
+                { signal },
+            );
+            while (Date.now() < deadline) {
+                if (generation !== this.generation || lookup !== this.lookupGeneration) return true;
+                if (signal.aborted) return false;
+                if (job.id) {
+                    const status = await api<ImportJob>(
+                        '/api/library/job',
+                        { id: job.id },
+                        { signal },
+                    );
+                    if (['error', 'cancelled'].includes(status.phase)) return false;
+                    if (status.phase === 'done') break;
+                } else {
+                    // An existing background refresh owns the job. Wait for its
+                    // publication without starting another import or cancelling it.
+                    const next = (
+                        await api<{ sources: PersonalSource[] }>('/api/library', undefined, {
+                            signal,
+                        })
+                    ).sources.find((s) => s.id === source.id);
+                    if (!next?.enabled || next.error) return false;
+                    if (next.revision !== source.revision || next.checked_at > source.checked_at)
+                        break;
+                }
+                await new Promise((resolve) => setTimeout(resolve, 250));
+            }
+            if (generation !== this.generation || lookup !== this.lookupGeneration) return true;
+            if (signal.aborted || Date.now() >= deadline) return false;
+            await this.load(channel.id, true, {
+                ...this.target,
+                position: this.store.get().position,
+            });
+            return true;
+        } catch {
+            return generation !== this.generation || lookup !== this.lookupGeneration;
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
     private async pollRadio(generation: number, playbackId: string) {
         try {
             const status = await api<{ playback_id?: string; audio?: { now_playing?: string } }>(
@@ -525,27 +729,54 @@ export class PlaybackController {
         this.recovery.networkChanged(online);
     }
     async resume(manual = true) {
+        if (this.store.get().ended) {
+            this.restart();
+            return;
+        }
+        const generation = this.generation;
         if (manual) {
             const reload =
                 this.needsReload ||
                 this.store.get().phase === 'error' ||
-                (!!this.session?.stream.continuous && this.store.get().phase === 'paused');
+                (this.store.get().mode === 'live' &&
+                    !!this.session?.stream.continuous &&
+                    this.store.get().phase === 'paused');
             this.wantsToPlay = true;
             this.recovery.start();
             if (reload) {
                 const id = this.store.get().current;
                 if (id) {
-                    await this.load(id, true);
+                    await this.load(id, true, {
+                        ...this.target,
+                        position: this.store.get().position,
+                    });
                     return;
                 }
             }
         }
         try {
             await this.video?.play();
-        } catch {
+        } catch (error) {
+            const name = (error as { name?: string }).name;
+            if (generation !== this.generation || name === 'AbortError') return;
+            if (name !== 'NotAllowedError') {
+                this.recovery.stop();
+                this.wantsToPlay = false;
+                this.store.set({ paused: true });
+                this.emit({ kind: 'error', ...window.LumePlayback.sanitizedError(error) });
+                this.phase(
+                    'error',
+                    'Non riesco ad avviare il video.',
+                    'Riprova o scegli un altro contenuto.',
+                );
+                return;
+            }
+            this.store.set({ paused: true });
             this.phase(
                 'interaction',
-                'Il tuo canale è pronto.',
+                this.store.get().mode === 'live'
+                    ? 'Il tuo canale è pronto.'
+                    : 'Il tuo video è pronto.',
                 'Premi Avvia per iniziare la visione con audio.',
             );
         }
@@ -556,6 +787,7 @@ export class PlaybackController {
             this.wantsToPlay = false;
             this.recovery.stop();
             this.video?.pause();
+            this.saveWatch();
             this.store.set({ paused: true, phase: 'paused' });
         }
     }
@@ -569,6 +801,7 @@ export class PlaybackController {
     audio(language: string) {
         this.player?.selectAudioLanguage(language);
         this.store.set({ audio: language });
+        void this.deps.changedPreferences?.({ audio_language: language }).catch(() => {});
     }
     text(id: string) {
         if (!this.player) return;
@@ -576,8 +809,20 @@ export class PlaybackController {
         if (track) this.player.selectTextTrack(track);
         this.player.setTextTrackVisibility(!!track);
         this.store.set({ text: id });
+        void this.deps
+            .changedPreferences?.(
+                track
+                    ? { subtitle_mode: 'language', subtitle_language: track.language }
+                    : { subtitle_mode: 'off' },
+            )
+            .catch(() => {});
     }
     goLive() {
+        if (this.store.get().mode === 'archive') {
+            const id = this.store.get().current;
+            if (id) void this.load(id, false, { mode: 'live' });
+            return;
+        }
         try {
             if (this.video && this.player) {
                 this.video.currentTime = this.player.seekRange().end - 0.3;
@@ -588,6 +833,8 @@ export class PlaybackController {
         }
     }
     async stop() {
+        ++this.lookupGeneration;
+        this.saveWatch();
         this.wantsToPlay = false;
         this.recovery.stop();
         const generation = ++this.generation;
@@ -608,5 +855,68 @@ export class PlaybackController {
             muted: this.video?.muted || false,
         });
         this.deps.stopped();
+    }
+    private updatePosition() {
+        if (!this.video || !this.session || this.pending || this.store.get().mode === 'live')
+            return;
+        const base = this.session.stream.base_offset || 0;
+        const duration =
+            this.store.get().mode === 'archive'
+                ? this.session.stream.duration || 0
+                : Number.isFinite(this.video.duration)
+                  ? this.video.duration
+                  : this.session.stream.duration || 0;
+        this.store.set({ position: Math.max(0, base + this.video.currentTime), duration });
+    }
+    private saveWatch(completed = false, leaving = false) {
+        const state = this.store.get();
+        if (!state.channel?.source_id || state.mode === 'live' || !this.session || this.pending)
+            return;
+        const body = {
+            id: state.current,
+            mode: state.mode,
+            event: this.session.stream.event || '',
+            revision: this.session.stream.watch_revision,
+            position: state.position,
+            duration: state.duration,
+            completed: completed || state.ended,
+        };
+        if (leaving) {
+            void api('/api/library/watch', body, { keepalive: true }).catch(() => {});
+            return;
+        }
+        this.watchQueue = this.watchQueue
+            .catch(() => {})
+            .then(async () => {
+                await api('/api/library/watch', body);
+            })
+            .catch(() => {});
+    }
+    seek(position: number) {
+        const state = this.store.get();
+        if (!state.seekable || state.mode === 'live' || !this.video || !state.current) return;
+        position = Math.max(
+            0,
+            Math.min(position, state.duration ? Math.max(0, state.duration - 0.1) : position),
+        );
+        if (state.mode === 'archive')
+            void this.load(state.current, true, { ...this.target, position });
+        else {
+            this.store.set({ ended: false });
+            this.video.currentTime = position;
+            this.updatePosition();
+            this.saveWatch();
+        }
+    }
+    seekBy(seconds: number) {
+        this.seek(this.store.get().position + seconds);
+    }
+    restart() {
+        const id = this.store.get().current;
+        if (id) {
+            this.wantsToPlay = true;
+            this.recovery.start();
+            void this.load(id, true, { ...this.target, position: 0 });
+        }
     }
 }

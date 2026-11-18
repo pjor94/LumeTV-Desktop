@@ -25,6 +25,7 @@ const MAX_MEDIA: usize = 32 * 1024 * 1024;
 type RelayResponse = (u16, String, String, Vec<u8>, Vec<(String, String)>);
 
 pub struct State {
+    pub personal: Option<Arc<crate::personal::network::SessionPolicy>>,
     pub events: Mutex<Vec<Value>>,
     pub complete: AtomicBool,
     pub stop: AtomicBool,
@@ -53,6 +54,11 @@ pub struct HarnessServer {
     pub launch_url: String,
     handle: Option<thread::JoinHandle<()>>,
 }
+impl State {
+    pub(crate) fn stream_url(&self) -> String {
+        self.stream.url.clone()
+    }
+}
 
 impl HarnessServer {
     pub fn start(
@@ -60,6 +66,15 @@ impl HarnessServer {
         stream: ResolvedStream,
         duration: u64,
         mode: &str,
+    ) -> Result<Self> {
+        Self::start_with_policy(channel, stream, duration, mode, None)
+    }
+    pub fn start_with_policy(
+        channel: Channel,
+        stream: ResolvedStream,
+        duration: u64,
+        mode: &str,
+        personal: Option<Arc<crate::personal::network::SessionPolicy>>,
     ) -> Result<Self> {
         let server = Server::http("127.0.0.1:0")
             .map_err(|_| anyhow!("Cannot bind loopback player server"))?;
@@ -104,6 +119,7 @@ impl HarnessServer {
             .build()
             .map_err(|_| anyhow!("Cannot initialize license adapter"))?;
         let state = Arc::new(State {
+            personal,
             events: Mutex::new(vec![]),
             complete: AtomicBool::new(false),
             stop: AtomicBool::new(false),
@@ -332,6 +348,10 @@ pub fn allowed_media(url: &Url, stream: &ResolvedStream) -> bool {
 }
 
 fn relay(request: Request, state: &State, input: &Value) {
+    if let Some(policy) = &state.personal {
+        relay_personal(request, state, input, policy);
+        return;
+    }
     let license = input["kind"] == "license";
     let target = if license {
         state.stream.drm.as_ref().map(|d| d.license_url.as_str())
@@ -532,6 +552,108 @@ fn respond(
         }
     }
     let _ = request.respond(response);
+}
+
+fn relay_personal(
+    request: Request,
+    state: &State,
+    input: &Value,
+    policy: &crate::personal::network::SessionPolicy,
+) {
+    let license = input["kind"] == "license";
+    let result = (|| -> Result<RelayResponse> {
+        policy.context.check()?;
+        if license {
+            let drm = policy.drm.as_ref().context("license_missing")?;
+            let challenge = STANDARD
+                .decode(input["body_base64"].as_str().unwrap_or(""))
+                .map_err(|_| anyhow!("license_challenge"))?;
+            let bytes = drm.license(&policy.context, &challenge)?;
+            record_network(state, true, 200, "response");
+            return Ok((
+                200,
+                "application/octet-stream".into(),
+                String::new(),
+                bytes,
+                vec![],
+            ));
+        }
+        if input["kind"] != "media"
+            || input["method"]
+                .as_str()
+                .is_some_and(|m| m != "GET" && m != "HEAD")
+        {
+            return Err(anyhow!("invalid_media_request"));
+        }
+        let url = input["url"].as_str().context("media_url")?;
+        let role = match input["resource"].as_str() {
+            Some("manifest") => crate::personal::Resource::Manifest,
+            Some("key") => crate::personal::Resource::Key,
+            _ => crate::personal::Resource::Media,
+        };
+        let mut headers = crate::personal::Headers::new();
+        if let Some(protocol) = input["headers"].as_object() {
+            for (k, v) in protocol {
+                if ["range", "accept", "content-type"].contains(&k.to_lowercase().as_str()) {
+                    if let Some(v) = v.as_str() {
+                        headers.insert(k.clone(), v.into());
+                    }
+                }
+            }
+        }
+        let response = policy.media_request(url, role, &headers)?;
+        let status = response.status().as_u16();
+        record_network(state, false, status, "response");
+        if !response.status().is_success() {
+            return Ok((status, String::new(), String::new(), vec![], vec![]));
+        }
+        let mime = response
+            .headers()
+            .get("Content-Type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("application/octet-stream")
+            .to_owned();
+        let final_url = response.url().to_string();
+        let mut extra = vec![];
+        for name in ["content-range", "accept-ranges"] {
+            if let Some(value) = response.headers().get(name).and_then(|v| v.to_str().ok()) {
+                extra.push((name.into(), value.into()));
+            }
+        }
+        let mut bytes = vec![];
+        response
+            .take(MAX_MEDIA as u64 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| anyhow!("upstream_read"))?;
+        if bytes.len() > MAX_MEDIA {
+            return Err(anyhow!("upstream_too_large"));
+        }
+        policy.context.check()?;
+        Ok((status, mime, final_url, bytes, extra))
+    })();
+    match result {
+        Ok((status, mime, final_url, bytes, mut extra)) if (200..300).contains(&status) => {
+            if license {
+                state.license_success.fetch_add(1, Ordering::Relaxed);
+            } else {
+                state.media_success.fetch_add(1, Ordering::Relaxed);
+                extra.push(("X-Lume-Final-Url".into(), final_url));
+            }
+            state
+                .transferred_bytes
+                .fetch_add(bytes.len() as u64, Ordering::Relaxed);
+            respond(request, status, &mime, bytes, extra);
+        }
+        Ok((status, _, _, _, _)) => {
+            state.network_failures.fetch_add(1, Ordering::Relaxed);
+            respond_json(request, status, json!({"error":"upstream_response"}))
+        }
+        Err(_) => {
+            state.network_failures.fetch_add(1, Ordering::Relaxed);
+            record_network(state, license, 0, "personal_request_failed");
+            respond_json(request, 502, json!({"error":"personal_request_failed"}));
+        }
+    }
 }
 
 #[cfg(test)]

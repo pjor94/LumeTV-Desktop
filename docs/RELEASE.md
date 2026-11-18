@@ -120,6 +120,18 @@ hash SDK, dimensioni e hash degli archivi. Il job finale verifica questi dati
 prima di firmare il feed. Developer ID, notarizzazione e Authenticode restano
 separati dalla firma Ed25519 dell’updater.
 
+## Verificare TMDB
+
+In **Settings → Secrets and variables → Actions → Secrets** salva il
+Read Access Token come `LUME_TMDB_READ_TOKEN`. Avvia il workflow **Rust
+cross-platform checks** con l’opzione **Verify TMDB with the repository read
+token** per eseguire il collaudo su Linux. GitHub passa il secret solo al test
+già compilato. Le build dei pacchetti non ricevono il token.
+
+Nell’app l’utente configura il proprio Read Access Token in **Video →
+Informazioni online**. Usare le normali variabili di configurazione GitHub
+solo per valori pubblici. [Gestione dei secret GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+
 ## Preparare in locale
 
 Dopo i controlli, la revisione dei file e il commit locale:

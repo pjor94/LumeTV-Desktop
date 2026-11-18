@@ -5,6 +5,11 @@ on:
     branches: ['**']
   pull_request:
   workflow_dispatch:
+    inputs:
+      verify_tmdb:
+        description: Verify TMDB with the repository read token
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       source_ref:
@@ -94,6 +99,28 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Run core and loopback contract tests
         run: cargo test --locked --all-targets
+      - name: Prepare the optional TMDB test executable
+        if: runner.os == 'Linux' && github.event_name == 'workflow_dispatch' && inputs.verify_tmdb
+        id: tmdb_test
+        run: |
+          cargo test --locked --lib --no-run --message-format=json | python3 -c '
+          import json, os, sys
+          binaries = []
+          for line in sys.stdin:
+              entry = json.loads(line)
+              if entry["reason"] == "compiler-artifact" and entry["target"]["name"] == "lume_player" and entry["profile"]["test"] and entry.get("executable"):
+                  binaries.append(entry["executable"])
+          if len(binaries) != 1:
+              raise SystemExit("Could not identify the TMDB test executable")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print("binary=" + binaries[0], file=output)
+          '
+      - name: Verify TMDB with a public movie
+        if: runner.os == 'Linux' && github.event_name == 'workflow_dispatch' && inputs.verify_tmdb
+        env:
+          LUME_TMDB_READ_TOKEN: ${{ secrets.LUME_TMDB_READ_TOKEN }}
+          LUME_TMDB_TEST_BINARY: ${{ steps.tmdb_test.outputs.binary }}
+        run: '"$LUME_TMDB_TEST_BINARY" --ignored --exact personal::video::online::tests::configured_tmdb_resolves_a_public_movie_and_caches_real_artwork'
       - name: Check Clippy
         run: cargo clippy --locked --all-targets -- -D warnings
       - name: Build

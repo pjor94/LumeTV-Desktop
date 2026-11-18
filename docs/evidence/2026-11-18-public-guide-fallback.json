@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-18",
+  "scope": "Shared full-feed public XMLTV metadata for missing personal live-TV guide and logos",
+  "rules": {
+    "guide": "Only when no manual or list-declared guide exists; disabled, unavailable or partial personal guides remain authoritative",
+    "logo": "Only when no nonempty logo is declared, even if the declared URL is invalid or fails",
+    "identity": "Exact XMLTV ID, canonical ID, then unique normalized name; conflicts, incompatible Rai 3 regions and timeshifts are rejected",
+    "playback": "Original channel identity, source, stream and credentials retained; public EPG does not grant archive playback",
+    "privacy": "Full public index is not included in catalog JSON; public logo transport never uses personal source headers or cookies"
+  },
+  "public_feed": {
+    "downloaded_at": "2026-11-16T12:10:17.596000+00:00",
+    "channel_definitions": 514,
+    "retained_programmes": 7555,
+    "xml_sha256": "02efdcdd6d55e747d602995bf63e6fa6885629cd60094b18f7c1d9623a7e8b51",
+    "sqlite_bytes": 2084864,
+    "live_fetch": "HTTP 429 with Retry-After 2381 seconds; reused existing downloaded cache without changing its timestamp"
+  },
+  "coverage_sample": {
+    "playlist": "prova",
+    "channels": 157,
+    "with_current_and_next_programme": 14,
+    "valid_public_logos": 15,
+    "name_match_example": "Super Tennis",
+    "logo_without_public_schedule_example": "Man-Ga",
+    "personal_provider_requests": 0
+  },
+  "checks": {
+    "rust_ordinary_passed": 156,
+    "rust_optional_ignored": 3,
+    "typescript_unit_passed": 29,
+    "browser_passed": 56,
+    "browser_optional_capture_skipped": 2,
+    "focused_final_ui": "passed",
+    "rust_format": "passed",
+    "prettier": "passed",
+    "frontend_bundle_stamp": "passed",
+    "clippy_warnings": 0,
+    "native_macos_build": "passed",
+    "native_bundle_signature": "verified",
+    "parser_and_index": "Extra channels, atomic invalid-feed rejection, backup recovery, ambiguity, regions and +1",
+    "metadata_precedence": "Independent provided-logo and personal-guide priorities, exclusions, VOD separation, home/catalog/channel/next/playback/window",
+    "real_local_api": "Public programme and cached PNG responses; no personal URL or header in catalog payloads"
+  },
+  "delivery": {
+    "bundle_updated": true,
+    "signature_verified": true,
+    "files_replaced": 8,
+    "app_executable_sha256": "a5271129f604f071dfe2cdb5f4fd825baaae61e3e99b6495199ea992584ea32b",
+    "restart_performed": false,
+    "public_logos_seeded": 15,
+    "sources_unchanged": true,
+    "preferences_unchanged": true,
+    "playback_session_preserved": true,
+    "shared_public_cache_installed": true,
+    "guide_json_preserved": true,
+    "new_code_available": "next app opening"
+  },
+  "limits": [
+    "The cached feed contains only Sky TG24 among the sample Sky channels; no guide is invented for absent channels.",
+    "Coverage is a point-in-time sample of the public feed, not a guarantee for all 157 channels.",
+    "The new native build was compiled and signed; current playback was deliberately kept in its existing process."
+  ],
+  "source_hashes": {
+    "src/public_guide.rs": "fd8c3daa5c66cbf149d25094de8575cfe1154ea814cf56ea6a0c37a574d28381",
+    "src/guide.rs": "ea6c37b1ad5a408136be414cbce02fe63cb4b01bc472757052fa6e3db45995f8",
+    "src/personal/metadata.rs": "43ca26bce8e9a053223f663503cfc63d8929e05955cc527288512b5673b9c4fa",
+    "src/personal/store.rs": "6b9da19490da4789a81824ecc9cc482af7540b5a5d7a34a4c4d2b04635de2934",
+    "src/desktop.rs": "fb8cd9933cb12273163badd689c1a753e532b6bc08047bf8cdc71e8e524a4948",
+    "web/app/src/pages/PersonalGuide.tsx": "82706a646fe4f7defac49c695864945c90a72f491d9613bdba75b770de27ecfa",
+    "web/app/src/pages/Playlists.tsx": "e7864ad663d9c79da7eb82c4a7063c6c587c036535fc63a4952400c3bb660af7",
+    "web/app/bundle/app.js": "981bfac246ee731358ab76fedc9e12b89201bfe3fb48a00630e2248bef715579"
+  }
+}

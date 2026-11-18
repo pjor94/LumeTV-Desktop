@@ -1,8 +1,18 @@
+import { HiddenChannelsSettings } from '../components/Personalization';
 import type { ReactNode } from 'react';
-import { app, refreshCatalog, refreshGuide, savePreferences, showShortcuts } from '../app';
+import {
+    app,
+    navigate,
+    refreshCatalog,
+    refreshGuide,
+    savePreferences,
+    showShortcuts,
+} from '../app';
 import { date, time } from '../domain';
 import { Heading, Icon } from '../components/common';
 import type { Preferences, Quality } from '../types';
+import { CompanionSettings } from '../components/Companion';
+import { BackupSettings } from '../components/Backups';
 import { Updates } from '../components/Updates';
 
 function Row({
@@ -69,6 +79,15 @@ export function Settings() {
                     <h2>Il tuo spazio</h2>
                     <div className="settings-card">
                         <Row
+                            symbol="grid"
+                            title="Le mie liste"
+                            description="Canali e video da liste personali, con guida e accesso separati."
+                        >
+                            <button className="text-button" onClick={() => navigate('playlists')}>
+                                Gestisci liste <Icon name="arrow" />
+                            </button>
+                        </Row>
+                        <Row
                             symbol="moon"
                             title="Aspetto"
                             description="Scegli la luce giusta per il tuo momento."
@@ -123,6 +142,89 @@ export function Settings() {
                                 <QualityOptions settings />
                             </select>
                         </Row>
+                        <Row
+                            symbol="volume"
+                            title="Lingua audio preferita"
+                            description="Viene ricordata anche cambiando canale o riaprendo Lume."
+                        >
+                            <select
+                                aria-label="Lingua audio preferita"
+                                value={p.audio_language || ''}
+                                onChange={(e) =>
+                                    void savePreferences({ audio_language: e.target.value })
+                                }
+                            >
+                                <option value="">Lingua del sistema</option>
+                                {[
+                                    ['it', 'Italiano'],
+                                    ['en', 'Inglese'],
+                                    ['fr', 'Francese'],
+                                    ['de', 'Tedesco'],
+                                    ['es', 'Spagnolo'],
+                                ].map(([code, label]) => (
+                                    <option key={code} value={code}>
+                                        {label}
+                                    </option>
+                                ))}
+                                {!!p.audio_language &&
+                                    !['it', 'en', 'fr', 'de', 'es'].includes(p.audio_language) && (
+                                        <option value={p.audio_language}>{p.audio_language}</option>
+                                    )}
+                            </select>
+                        </Row>
+                        <Row
+                            symbol="guide"
+                            title="Sottotitoli preferiti"
+                            description="Usa la scelta automatica, disattivali o scegli una lingua quando disponibile."
+                        >
+                            <select
+                                aria-label="Sottotitoli preferiti"
+                                value={p.subtitle_mode || 'system'}
+                                onChange={(e) =>
+                                    void savePreferences({ subtitle_mode: e.target.value })
+                                }
+                            >
+                                <option value="system">Automatici</option>
+                                <option value="off">Disattivati</option>
+                                <option value="language">Lingua preferita</option>
+                            </select>
+                        </Row>
+                        {p.subtitle_mode === 'language' && (
+                            <Row
+                                symbol="guide"
+                                title="Lingua dei sottotitoli"
+                                description="Lume attiva i sottotitoli se la sorgente offre questa lingua."
+                            >
+                                <select
+                                    aria-label="Lingua dei sottotitoli"
+                                    value={p.subtitle_language || ''}
+                                    onChange={(e) =>
+                                        void savePreferences({ subtitle_language: e.target.value })
+                                    }
+                                >
+                                    <option value="">Lingua del sistema</option>
+                                    {[
+                                        ['it', 'Italiano'],
+                                        ['en', 'Inglese'],
+                                        ['fr', 'Francese'],
+                                        ['de', 'Tedesco'],
+                                        ['es', 'Spagnolo'],
+                                    ].map(([code, label]) => (
+                                        <option key={code} value={code}>
+                                            {label}
+                                        </option>
+                                    ))}
+                                    {!!p.subtitle_language &&
+                                        !['it', 'en', 'fr', 'de', 'es'].includes(
+                                            p.subtitle_language,
+                                        ) && (
+                                            <option value={p.subtitle_language}>
+                                                {p.subtitle_language}
+                                            </option>
+                                        )}
+                                </select>
+                            </Row>
+                        )}
                         <Row
                             symbol="volume"
                             title="Avvia con audio disattivato"
@@ -222,6 +324,9 @@ export function Settings() {
                         cambiare in base alla disponibilità delle emittenti.
                     </p>
                 </section>
+                <HiddenChannelsSettings />
+                <CompanionSettings />
+                <BackupSettings />
                 <Updates />
                 <div className="about-lume">
                     <img src="/assets/symbol.svg" alt="" />

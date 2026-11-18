@@ -1,9 +1,18 @@
+import { personalizedChannels } from './domain';
 import { api, bounded, createPreferenceQueue, initializeSession } from './api';
 import { createStore } from './store';
 import { matchesProvider, isRadio } from './domain';
 import { PlaybackController } from './playback';
 import { StartupController } from './startup';
 import { motion, type DockRect } from './motion';
+import {
+    catalogChannel,
+    librarySelection,
+    writeSession,
+    videoSelection,
+    personalRadioSelection,
+    refreshLibrary,
+} from './personal';
 import type { AppState, Bootstrap, Catalog, Guide, Preferences, Route } from './types';
 
 export const app = createStore<AppState>({
@@ -48,8 +57,12 @@ export const startup = new StartupController((signal) => {
     return bounded(window.LumePlayback.probeCapabilities(video), 12_000, signal);
 });
 export const playback = new PlaybackController({
-    channel: (id) => app.get().channels.find((c) => c.id === id),
+    channel: (id) =>
+        id.startsWith('personal_')
+            ? catalogChannel(id)
+            : app.get().channels.find((c) => c.id === id),
     preferences: () => app.get().preferences,
+    changedPreferences: (patch) => savePreferences(patch),
     played: (playback_id) => preferenceRequest({ playback_id }, '/api/played'),
     watch: () => navigate('watch'),
     stopped: () => {
@@ -59,15 +72,30 @@ export const playback = new PlaybackController({
     },
 });
 const preferenceRequest = createPreferenceQueue<Preferences>(
-    (path, body) => api(path, body),
+    (path, body) =>
+        path === '/api/library/video/action' || path === '/api/library/backup/restore'
+            ? api<{ preferences: Preferences }>(path, body).then((value) => value.preferences)
+            : api(path, body),
     (preferences) => {
+        const changedLayout =
+            JSON.stringify(app.get().preferences.channel_layout) !==
+            JSON.stringify(preferences.channel_layout);
         app.set({ preferences });
+        if (changedLayout) void refreshLibrary();
         playback.applyPreferences();
     },
 );
+export function restoreBackup(body: unknown) {
+    return preferenceRequest(body, '/api/library/backup/restore');
+}
+export function saveVideoAction(body: unknown) {
+    return preferenceRequest(body, '/api/library/video/action');
+}
 export async function savePreferences(patch: unknown, message?: string) {
     try {
         const preferences = await preferenceRequest(patch);
+        if ((patch as { toggle_favorite?: string })?.toggle_favorite?.startsWith('personal_'))
+            void refreshLibrary();
         if (message) toast(message);
         return preferences;
     } catch {
@@ -98,8 +126,22 @@ export function takeDockTransition() {
     dockBefore = null;
     return before;
 }
+export function openGuide(source = 'builtin') {
+    writeSession('guide-source', source);
+    navigate('guide');
+}
 export function setQuery(query: string) {
-    if (app.get().page === 'radio') app.set({ radioQuery: query, radioPage: 0 });
+    if (app.get().page === 'radio') {
+        if (personalRadioSelection.get().source === 'builtin')
+            app.set({ radioQuery: query, radioPage: 0 });
+        else personalRadioSelection.set({ query });
+    }
+    if (app.get().page === 'videos') videoSelection.set({ query });
+    if (
+        ['channels', 'favorites'].includes(app.get().page) &&
+        librarySelection.get().source !== 'builtin'
+    )
+        librarySelection.set({ query });
     captureDock();
     app.set({ query });
 }
@@ -110,7 +152,17 @@ export function navigate(page: Route) {
     app.set({
         page,
         previousPage: state.page !== 'watch' ? state.page : state.previousPage,
-        query: page === 'radio' ? state.radioQuery : '',
+        query:
+            page === 'radio'
+                ? personalRadioSelection.get().source !== 'builtin'
+                    ? personalRadioSelection.get().query
+                    : state.radioQuery
+                : page === 'videos'
+                  ? videoSelection.get().query
+                  : ['channels', 'favorites'].includes(page) &&
+                      librarySelection.get().source !== 'builtin'
+                    ? librarySelection.get().query
+                    : '',
         dialogOpen: false,
         ...(page !== state.page || !['channels', 'favorites'].includes(page)
             ? { provider: 'all', group: 'all' }
@@ -118,9 +170,9 @@ export function navigate(page: Route) {
         scrollRevision: state.scrollRevision + 1,
     });
 }
-export function play(id: string) {
+export function play(id: string, target?: { mode?: string; event?: string; position?: number }) {
     app.set({ dialogOpen: false });
-    void playback.load(id);
+    void playback.load(id, false, target);
 }
 export function showProgramme(key: string) {
     app.set({ dialog: { kind: 'programme', key }, dialogOpen: true });
@@ -151,9 +203,25 @@ export async function toggleReminder(key: string) {
         );
 }
 export function zap(direction: number) {
+    if (playback.store.get().mode !== 'live') {
+        playback.seekBy(direction > 0 ? 30 : -10);
+        return;
+    }
+    const current = playback.store.get().channel;
+    if (current?.source_id) {
+        void api<{ channel: import('./types').Channel | null }>('/api/library/next', {
+            id: current.id,
+            direction,
+        })
+            .then(({ channel }) => {
+                if (channel) play(channel.id);
+            })
+            .catch(() => toast('Non riesco a cambiare canale. Riprova.'));
+        return;
+    }
     const { channels: all, preferences } = app.get();
     const kind = isRadio(playback.store.get().channel);
-    const eligible = all.filter((c) => isRadio(c) === kind);
+    const eligible = personalizedChannels(all, preferences).filter((c) => isRadio(c) === kind);
     const channels =
         preferences.zap_favorites_only && preferences.favorites.length
             ? eligible.filter((c) => preferences.favorites.includes(c.id))
@@ -224,7 +292,13 @@ export function refreshGuide(force = false): Promise<void> {
                 force ? {} : undefined,
             );
             app.set({ guide });
-            guidePoll = setTimeout(() => void refreshGuide(), guide.loading ? 1800 : 300_000);
+            const retryIn = (guide.next_retry_at || 0) - Date.now();
+            const delay = guide.loading
+                ? 1800
+                : guide.error && retryIn > 0
+                  ? Math.min(300_000, Math.max(1000, retryIn))
+                  : 300_000;
+            guidePoll = setTimeout(() => void refreshGuide(), delay);
             if (force && !guide.loading) toast(guide.error || 'La guida è aggiornata.');
         } catch {
             app.set({

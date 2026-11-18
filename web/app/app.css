@@ -30,3 +30,8 @@
 @media(max-width:820px){.sidebar .brand img:not(.brand-symbol){display:none}.sidebar .brand img.brand-symbol{display:block;width:30px;height:30px;margin:auto;object-fit:contain}}
 
 .provider-options{display:flex;flex-wrap:wrap;max-width:100%}
+.station-logo:has(>img[data-loaded])>.rai-word,.station-logo:has(>img[data-loaded])>.station-fallback{visibility:hidden}
+.hero p{min-height:3.4em}
+.station-logo{container-type:size}
+.station-logo .station-fallback{font-size:clamp(9px,min(24cqh,calc((100cqw - 8px)/var(--logo-letters,8)*1.6)),32px);line-height:1.1;max-height:100cqh;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+@container(max-height:38px){.station-logo .station-fallback{font-size:0}.station-logo .station-fallback::after{content:attr(data-short);font-size:11px;line-height:1;display:block}}

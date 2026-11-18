@@ -54,7 +54,7 @@
     return result;
   }
 
-  function buildRelayRequest(uri, request, kind) {
+  function buildRelayRequest(uri, request, kind, requestType) {
     const payload = {
       kind,
       method: request.method || 'GET',
@@ -64,6 +64,10 @@
       const original = uri.startsWith('lume:') ? uri.slice(5) : uri;
       if (!/^https?:\/\//i.test(original)) throw new TypeError('Unsupported media scheme');
       payload.url = original;
+      // Shaka RequestType: manifest=0, segment=1, key=6. No playlist
+      // header is allowed to choose the purpose of an upstream request.
+      if (requestType === 0) payload.resource = 'manifest';
+      else if (requestType === 6) payload.resource = 'key';
     } else if (kind !== 'license') {
       throw new TypeError('Unsupported request kind');
     }
@@ -102,12 +106,12 @@
   }
 
   function makeRelayPlugin(shaka, apiFetch, kind) {
-    return function (uri, request) {
+    return function (uri, request, requestType) {
       const abort = new AbortController();
       const started = performance.now();
       const promise = (async () => {
         try {
-          const payload = buildRelayRequest(uri, request, kind);
+          const payload = buildRelayRequest(uri, request, kind, requestType);
           const response = await apiFetch('/api/fetch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

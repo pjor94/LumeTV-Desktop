@@ -1,0 +1,127 @@
+{
+  "date": "2026-11-18",
+  "scope": "Remaining requested Android features adapted for desktop; Android checkout unchanged",
+  "android_reference_sha256": {
+    "core/src/main/kotlin/it/lumetv/core/PlaylistLocalplay.kt": "f86af78f7d4c910186085fd79207df6debc787ad7e829fcf67868ea7ac8d34f9",
+    "app/src/main/java/it/lumetv/app/data/PersonalPlaybackConfig.kt": "304fbcbfa23873a548ec03e34ccef71128687c4456c5f56f53bd80baaa0d201f",
+    "app/src/main/java/it/lumetv/app/data/BackupCipher.kt": "e2296662b2869fa0c7197bd4ee801434a563c86bbe8de22c0f46189dc63c20bc",
+    "app/src/main/java/it/lumetv/app/data/PersonalBackupRepository.kt": "e3360d74e1f584848913edd8967476fd8732f6af05e5234d0ebebcf7d445ffbe",
+    "app/src/main/java/it/lumetv/app/data/PersonalPlaylistStore.kt": "7493f498f36118b858a9a5767296b28c35bb5c911b907f818f36a5b45bb39cd2",
+    "app/src/main/java/it/lumetv/app/data/BackupPersonalData.kt": "eac804d499a16745d20e4c7c9dca4237ba4ef0e1298122c259a7ff6e1dc33d9c",
+    "app/src/main/java/it/lumetv/app/data/WatchReference.kt": "43c2f1a0d163286ebba26f070582900fb33c407ea97234ac8026bdd88697fee3",
+    "app/src/main/java/it/lumetv/app/companion/CompanionProtocol.kt": "7998384f315c17ef68f381772778625e2da4cbc2b645fbff396e9be142ba185f",
+    "app/src/main/java/it/lumetv/app/companion/CompanionClient.kt": "54545049ca4786e0d89698fbf050a32b4eed0dd35b419d3f8f7ddb58c89c2835",
+    "app/src/main/java/it/lumetv/app/companion/CompanionPairing.kt": "d4e1060bdc624ba50b84e58f4782b8e5709efd1c29db5deae8ce995a18d6df0c",
+    "app/src/main/java/it/lumetv/app/companion/CompanionPlaylistClient.kt": "1265144792d0c5c7127e5a17bf1e0a5ffa0653e628f754299601fff84dfa8036"
+  },
+  "desktop_working_tree_sha256": {
+    "src/companion/discovery.rs": "c07026e49f2bbdba882776e87d3087cd17883d65ef7646082d5b9f152efa25b9",
+    "src/companion/mod.rs": "3805fe7fa415215b6e126c54c70650d8e9075bae09b3339f2a2f8a4b1897fd5e",
+    "src/companion/tests.rs": "319962d753bc31c27907e19386de12160833fb6a912be896358f905365f8bf1b",
+    "src/companion/transport.rs": "9b2eac8da50d8841e4f5688552ab6db4caa03286fbca935b9122edc61d68f30a",
+    "src/desktop_companion.rs": "a9ceb8eaf6e20eb892138119b096e981c975d80abbc6d4a370f10d54d616a366",
+    "src/personal/backup.rs": "b4016b42c34540214c0a0811f895e7fde9e63105945290f6338b8ebc63f5f8c2",
+    "src/personal/catchup.rs": "f1233f8ca49f1d10198b49635082e2081bb0a622e79c0f2d046b867885d1dd13",
+    "src/personal/drm.rs": "2fa2597b5d4ece264639f7cd43fc27b43b96c173f4e2063a7baf1a741600c8ef",
+    "src/personal/guide.rs": "561b10799d6f4fecb37b01b0a5ce3ecf702a1af964803d3b3a30c787f4c3c790",
+    "src/personal/localplay.rs": "f9d11977914e53d050d0fc9262efad00741d9e03d57595804a5c7d773e812704",
+    "src/personal/mod.rs": "99464b491fa6585c3fe88dc64e739f4fdc0ceb4c6db7c87465eddd66196d3368",
+    "src/personal/network.rs": "f6b4d7c66e5b0296682b0040baa4eb9015c083b1e92cde582407281df9d1d3f5",
+    "src/personal/parser.rs": "e421be52414ecedd1bf0af7faf3cb17971cab80599eb456e2c09714507bc1dc8",
+    "src/personal/store.rs": "1ab780a9dd7772aeec053a0d20d42640691c38579e3193638be12330c1bbca40",
+    "src/personal/tests.rs": "ce8f224079fcf14d65f935b223f502bcacde748f7fd0c3564b68e418f51e4cd5",
+    "src/personal/video/online.rs": "c3288f776bedc05f5ff3ca2e5d6d0b3efc43393882b058aa7c3b6a66faae530e",
+    "src/personal/video/tests.rs": "9e7fc7648ab89c8ee421359e20d47fbb573ef895013ac56786e8b5002759239e",
+    "src/personal/video.rs": "94342656734d256689684942353bbbd0da452537366b9ac76604ed4a9a862b8e",
+    "src/personal/wire.rs": "9e0f05f42176749cfe916d35cccceadf01786d8503b3b70465dd4a1674b4fd1c",
+    "src/preferences.rs": "75437b2af2bb87766a0e2e71b18d83e26b0b6c06c1a453cefe132062504f59be",
+    "web/app/src/components/Backups.tsx": "e707d7c717a0c10cfdf1fcaea4b3a9f8f07ac693db03f5fe5cf7029c7f8700b5",
+    "web/app/src/components/Companion.tsx": "b3dd37e676965687135d14a2712cf924dd9ae9928ba8d079b7e32690988b23ae",
+    "web/app/src/components/Personalization.tsx": "32162fb54074e503c07447b8917ecfc5f4b5d6b39f4b2d89680518173f57ec33",
+    "web/app/src/pages/Videos.tsx": "9826badf3dfe82f17ac0c0e494fafce1e4f56307c5c59728011045233b9a8468",
+    "web/app/src/playback.ts": "91c4b27f0e7d7b02c6b5fd8fb3fd02ac0d86c04829612d897e8995320ee2e33b"
+  },
+  "checks": {
+    "rust_ordinary_passed": 146,
+    "rust_optional_ignored": 3,
+    "browser_passed": 52,
+    "browser_optional_capture_skipped": 2,
+    "typescript_unit_passed": 29,
+    "clippy_warnings": 0,
+    "android_backup_independent_node_vector": "passed",
+    "discovery_localplay_provider_fixtures": "passed",
+    "frontend_stamp": "passed",
+    "format": "passed"
+  },
+  "vod_capacity": {
+    "titles": 500000,
+    "import_and_index_seconds": 169.41,
+    "last_page_home_and_search_seconds": 6.202,
+    "snapshot_bytes": 853987328,
+    "page_limit": 200,
+    "status": "passed"
+  },
+  "native_macos": {
+    "runtime": "CEF OBS 150.0.19 arm64",
+    "public_clip": "W3C Sintel trailer",
+    "source_user_agent_override": "LumeTV",
+    "temporary_synthetic_profile": true,
+    "android_backup_home_and_preferences_verified": true,
+    "assessment": {
+      "audio_audibility": "not_verified",
+      "audio_decoded_bytes": 771437,
+      "decoded_video_frames_delta": 1103,
+      "drm_required": false,
+      "drm_verified": false,
+      "elapsed_server_seconds": 46.002,
+      "encrypted_event_observed": false,
+      "license_http_success": false,
+      "license_local_clearkey": false,
+      "progress_seconds": 45.986,
+      "required_seconds": 30,
+      "status": "verified",
+      "usable_key_observed": false,
+      "video_dimensions_observed": true,
+      "video_frames_observed": 1154
+    },
+    "native_backup_save": {
+      "native_save_exists": true,
+      "bytes": 3227,
+      "magic": "LUMEBK01",
+      "matches_prepared_file": true
+    },
+    "reopened_same_export_with_native_file_picker": true,
+    "reimport_result": {
+      "playlists_added": 0,
+      "playlists_kept": 2,
+      "favorites_added": 0,
+      "watch_added": 0,
+      "ignored": 2
+    },
+    "final_build_compiled": true
+  },
+  "companion": {
+    "independent_hmac_vector": "passed",
+    "independent_openssl_spki_vector": "passed",
+    "local_tls_exact_pin": "passed",
+    "identity_change_prevents_http_credentials": true,
+    "physical_tv_tested": false
+  },
+  "limits": [
+    "Physical Android TV pairing, remote playback and playlist import need a device test.",
+    "Native media evidence uses a public clear MP4 clip and does not establish universal provider, container, codec or DRM compatibility.",
+    "Decoded audio is measured; human audio audibility was not confirmed.",
+    "Audio-only, data saving and Android system controls were excluded by the user.",
+    "The one-million live-TV capacity result and the live TMDB request were not rerun in this session."
+  ],
+  "restored_user_profile": {
+    "reopened": true,
+    "source_count": 1,
+    "total_entries": 151,
+    "vod_entries": 0,
+    "tmdb_configured": true,
+    "tmdb_enabled": false,
+    "playing_channel": false,
+    "native_home_observed": true
+  }
+}

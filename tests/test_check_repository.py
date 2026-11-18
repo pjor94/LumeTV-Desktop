@@ -30,6 +30,7 @@ class RepositoryTests(unittest.TestCase):
             "profiles/session/preferences.json", "reports/raw.json",
             "target/debug/lume-player", ".env.production", "certs/signing.p12",
             "runtime/WidevineCdm/manifest.json", "runtime/libwidevinecdm.dylib",
+            "video-settings.json", "personal/.video-settings.tmp",
         ]
         findings = checker.audit_files(self.root, names)
         self.assertEqual(len(findings), len(names))
@@ -42,11 +43,14 @@ class RepositoryTests(unittest.TestCase):
 
     def test_credentials_are_reported_without_echoing_their_values(self):
         token = "ghp_" + "a" * 36
-        name = self.write("src/leak.txt", "value=" + token)
+        bearer = ".".join(("eyJ" + "a" * 20, "b" * 20, "c" * 32))
+        name = self.write("src/leak.txt", "value=" + token + "\nbearer=" + bearer)
         findings = checker.audit_files(self.root, [name])
-        self.assertEqual(len(findings), 1)
+        self.assertEqual(len(findings), 2)
         self.assertIn("src/leak.txt:1", findings[0])
         self.assertNotIn(token, findings[0])
+        self.assertIn("possible bearer token", findings[1])
+        self.assertNotIn(bearer, findings[1])
 
     def test_link_to_ignored_or_unpublished_existing_file_is_rejected(self):
         self.write("reports/private.json", "{}")

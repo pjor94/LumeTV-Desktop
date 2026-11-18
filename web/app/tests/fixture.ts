@@ -31,6 +31,10 @@ export const defaultPreferences: Preferences = {
     muted: true,
     quality: 'auto',
     zap_favorites_only: false,
+    audio_language: '',
+    subtitle_mode: 'system',
+    subtitle_language: '',
+    channel_layout: { version: 1, order: [], hidden: [], owners: {} },
 };
 export const catalog = {
     updated_at: now,
@@ -77,6 +81,7 @@ export async function fixture(
         radioChannels = [],
         radioTitle = '',
         continuousRadio = false,
+        realPlayer = false,
     }: {
         widevine?: boolean;
         startupWidevine?: boolean | (() => boolean);
@@ -85,6 +90,7 @@ export async function fixture(
         radioChannels?: Channel[];
         radioTitle?: string;
         continuousRadio?: boolean;
+        realPlayer?: boolean;
         updates?:
             | Partial<UpdateStatus>
             | ((path: string, body: Record<string, unknown>) => Partial<UpdateStatus>);
@@ -115,7 +121,11 @@ export async function fixture(
         const request = route.request();
         const path = new URL(request.url()).pathname;
         calls.push(path);
-        const body = request.method() === 'POST' ? request.postDataJSON() : {};
+        const body =
+            request.method() === 'POST' &&
+            request.headers()['content-type']?.includes('application/json')
+                ? request.postDataJSON()
+                : {};
         let data: unknown;
         if (path === '/api/bootstrap')
             data = { channels: allChannels, preferences, catalog, version: '0.1.0', os: 'linux' };
@@ -152,8 +162,28 @@ export async function fixture(
                 'volume',
                 'muted',
                 'zap_favorites_only',
+                'audio_language',
+                'subtitle_mode',
+                'subtitle_language',
             ] as const)
                 if (body[key] !== undefined) Object.assign(preferences, { [key]: body[key] });
+            if (body.hide_channel)
+                preferences.channel_layout!.hidden.push({
+                    id: String(body.hide_channel),
+                    name: allChannels.find((c) => c.id === body.hide_channel)!.name,
+                    source: 'builtin_tv',
+                    kind: 'TV',
+                });
+            if (body.restore_hidden)
+                preferences.channel_layout!.hidden = preferences.channel_layout!.hidden.filter(
+                    (c) => c.id !== body.restore_hidden,
+                );
+            if (body.channel_first)
+                preferences.channel_layout!.order = [
+                    String(body.channel_first),
+                    ...preferences.channel_layout!.order.filter((id) => id !== body.channel_first),
+                ];
+            if (body.reset_channel_order) preferences.channel_layout!.order = [];
             data = preferences;
         } else if (path === '/api/played') {
             const id = String(body.playback_id).replace(/^test-/, '');
@@ -196,14 +226,18 @@ export async function fixture(
                 elapsed_seconds: 0,
                 ...(typeof status === 'function' ? status() : status),
             };
+        else if (path === '/api/companion/devices') data = { televisions: [] };
+        else if (path === '/api/library') data = { sources: [] };
         else data = {};
         await route.fulfill({ json: data });
     });
-    await page.route('**/vendor/shaka-player.compiled.js', (route) =>
-        route.fulfill({
-            contentType: 'text/javascript',
-            body: `
+    if (!realPlayer)
+        await page.route('**/vendor/shaka-player.compiled.js', (route) =>
+            route.fulfill({
+                contentType: 'text/javascript',
+                body: `
     window.testPlayer = { attachments: 0, loads: 0, unloads: 0, destroyed: 0 };
+    Object.defineProperties(window.testPlayer, { configurations: { value: [] }, starts: { value: [] }, emit: { value: undefined, writable: true } });
     const paused = new WeakMap();
     Object.defineProperty(HTMLMediaElement.prototype, 'paused', { get() { return paused.get(this) ?? true; } });
     HTMLMediaElement.prototype.play = async function () { paused.set(this, false); this.dispatchEvent(new Event('playing')); };
@@ -215,16 +249,16 @@ export async function fixture(
         async attach(video) { this.video = video; window.testPlayer.attachments++; }
         async unload() { window.testPlayer.unloads++; }
         async destroy() { window.testPlayer.destroyed++; }
-        async load() { window.testPlayer.loads++; }
-        configure() {} addEventListener(name, fn) { this.handlers[name] = fn; }
+        async load(url, start) { window.testPlayer.loads++; window.testPlayer.starts.push(start); if(start != null) this.video.currentTime=start; }
+        configure(config) { window.testPlayer.configurations.push(config); } addEventListener(name, fn) { this.handlers[name] = fn; }
         getNetworkingEngine() { return { registerRequestFilter() {} }; }
         getVariantTracks() { return [{id: 1, language: 'it', height: 720, active: true}]; }
         getTextTracks() { return []; } isTextTrackVisible() { return false; }
         getKeyStatuses() { return {}; } selectAudioLanguage() {} setTextTrackVisibility() {} seekRange() { return {end: 10}; }
       }
     };`,
-        }),
-    );
+            }),
+        );
     const player = readFileSync(new URL('../../player.js', import.meta.url), 'utf8');
     await page.route('**/player.js', (route) =>
         route.fulfill({

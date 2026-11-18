@@ -1,0 +1,87 @@
+{
+  "guide": {
+    "programme_channels": 83,
+    "programmes": 4075,
+    "available_logos": 110,
+    "error": null
+  },
+  "artwork": [
+    {
+      "channel": "rai1",
+      "status": 200,
+      "mime": "image/png",
+      "bytes": 4762,
+      "dimensions": [
+        150,
+        114
+      ]
+    },
+    {
+      "channel": "canale5",
+      "status": 200,
+      "mime": "image/png",
+      "bytes": 7239,
+      "dimensions": [
+        150,
+        126
+      ]
+    },
+    {
+      "channel": "italia1",
+      "status": 200,
+      "mime": "image/png",
+      "bytes": 7717,
+      "dimensions": [
+        150,
+        150
+      ]
+    },
+    {
+      "channel": "rete4",
+      "status": 200,
+      "mime": "image/png",
+      "bytes": 7676,
+      "dimensions": [
+        150,
+        148
+      ]
+    }
+  ],
+  "date": "2026-11-16",
+  "platform": "macos-arm64-cef",
+  "baseline": {
+    "programme_channels": 0,
+    "logos": 0,
+    "cache_failure": "guide_rate_limit"
+  },
+  "real_feed": {
+    "compressed_bytes": 803800,
+    "compressed_sha256": "ad127040120a6fa949a1d22d45fa9eea4570698efee1f0bb2aa970b2c5b86da1",
+    "xml_bytes": 9337026,
+    "epg_logos": 84
+  },
+  "recovery": {
+    "method": "existing_real_public_download_parsed_offline",
+    "catalogue_mapping_verified": true,
+    "download_time_preserved": true,
+    "original_retry_deadline_preserved": true,
+    "next_automatic_upstream_refresh_verified": false
+  },
+  "visual_checks": {
+    "catalogue_current_programmes_and_logos": true,
+    "guide_grid_programmes_times_and_logos": true
+  },
+  "tests": {
+    "rust_passed": 119,
+    "large_capacity_not_repeated": true,
+    "browser_passed": 34,
+    "optional_captures_skipped": 2
+  },
+  "sources_sha256": {
+    "src/guide.rs": "58f05f6385f7e8c1a82b4131d2228c65288a9fe27fded4fcca18bb2d4cca57ec",
+    "src/desktop.rs": "2eab612d73acc44c35948a770744f81b40e6db1dd3c2a05bc799656fb3cd04c2",
+    "web/app/src/app.ts": "2ecef8e9619b2c35dcd68261fd118ad9ac7875d1d88445945ee4a1f1ed4de0bc",
+    "web/app/app.css": "1710b090c0dfcaa4955205954c08929aa30daa23adc31770acd362cbd8ba2d35",
+    "web/app/tests/app.spec.ts": "ddf12089290d7e13fbba891028f09822ab94775a161a253b832134de83db7b1d"
+  }
+}

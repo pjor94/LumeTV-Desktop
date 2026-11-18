@@ -1,0 +1,207 @@
+{
+  "date": "2026-11-18",
+  "scope": "Authorized investigation of a personal playlist, expiring channel addresses, Xtream HLS and public numeric CDN redirects",
+  "explicit_network_authorization": true,
+  "desktop_working_tree_sha256": {
+    "src/network.rs": "c1bd3f80593974f4f277cc755264270209fb38286817a97eea416faf5cc8a83c",
+    "src/server.rs": "e92e097e338c9b0878b38b94282f9e8997c176b96de4d3180cf777f51bdd94a5",
+    "src/personal/network.rs": "14709f18cc4d2d114434bd1e7c946bf4b50227606701d2c186a699278e53f4eb",
+    "src/personal/hls.rs": "499cdb47c853b23f00f830f63ff95556bd37609211405b3d50e6f509e1c1b5ac",
+    "src/personal/store.rs": "c9627895a1aa22d04b78d6b09ce877c507eab9b5f9476424c39f00915a8412dc",
+    "src/personal/tests.rs": "ed2d1c44df3c232b2d95a6306f9f0b8cc67d46338899d5d25f1dab949b105a61",
+    "web/app/src/playback.ts": "7862b19ad77a353a1e87e2f107a42429f70db859a1ca80d4eca4f8012054a97e",
+    "web/app/tests/personal.spec.ts": "17a87afe37b8fe193f7855fc7b4c3e6870c7cfc6c951e16e5120ae8e9f415712"
+  },
+  "source_refresh": {
+    "previous_entries": 151,
+    "updated_entries": 157,
+    "previous_revision": 4,
+    "updated_revision": 5,
+    "saved_addresses_and_credentials_omitted": true,
+    "same_header_and_drm_declarations": true,
+    "samples": [
+      {
+        "channel": "Sky Adventure",
+        "old_manifest_status": 200,
+        "old_initialization_and_fragment_status": 403,
+        "updated_initialization_and_fragment_status": 200
+      },
+      {
+        "channel": "Sky Serie",
+        "old_manifest_status": 200,
+        "old_initialization_and_fragment_status": 403,
+        "updated_initialization_and_fragment_status": 200
+      }
+    ]
+  },
+  "native_macos_after_source_refresh": {
+    "assessment": {
+      "audio_audibility": "not_verified",
+      "audio_decoded_bytes": 712847,
+      "decoded_video_frames_delta": 849,
+      "drm_required": true,
+      "drm_verified": true,
+      "elapsed_server_seconds": 34.602,
+      "encrypted_event_observed": true,
+      "license_http_success": false,
+      "license_local_clearkey": true,
+      "progress_seconds": 33.224,
+      "required_seconds": 30,
+      "status": "verified",
+      "usable_key_observed": true,
+      "video_dimensions_observed": true,
+      "video_frames_observed": 1061
+    },
+    "network": {
+      "document_requests": 0,
+      "failed_requests": 0,
+      "license_http_successes": 0,
+      "media_http_successes": 102,
+      "script_requests": 0,
+      "session_requests": 0,
+      "transferred_bytes": 29676598
+    },
+    "http_status_counts": {
+      "200": 102
+    }
+  },
+  "new_rust_hls_transport": {
+    "channel": "DAZN 1",
+    "rust_hls_negotiated": true,
+    "native_progressive_bypassed": true,
+    "stored_transport_unchanged": true,
+    "manifest_http_success": true,
+    "manifest_hls_header": true,
+    "manifest_bytes": 2848,
+    "temporary_profile_only": true,
+    "fragment_http_success": true,
+    "fragment_bytes": 4000828,
+    "mpeg_ts_sync": true
+  },
+  "ts_endpoint_sample": [
+    {
+      "name": "DAZN 1",
+      "hls_status": 200,
+      "hls_available": true,
+      "candidate_is_xtream_live": true
+    },
+    {
+      "name": "Lba Tv 1",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Lba Tv 2",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Lba Tv 3",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Lba Tv 4",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Lba Tv 5",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Lba Tv 6",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Lba Tv 7",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Diretta Gol Serie A",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    },
+    {
+      "name": "Diretta Gol Serie B",
+      "hls_status": 403,
+      "hls_available": false,
+      "candidate_is_xtream_live": true,
+      "original_status": 403,
+      "original_mime": "text/html",
+      "original_bytes_sampled": 0
+    }
+  ],
+  "other_hls_samples": [
+    {
+      "channel": "Rai News 24",
+      "master_status": 200,
+      "variant_status": 200,
+      "fragment_status": 200
+    },
+    {
+      "channel": "Caccia",
+      "manifest_status": 403
+    }
+  ],
+  "checks": {
+    "rust_ordinary_passed": 149,
+    "rust_optional_ignored": 3,
+    "browser_passed": 55,
+    "browser_optional_capture_skipped": 2,
+    "clippy_warnings": 0,
+    "format": "passed",
+    "frontend_stamp": "passed",
+    "native_build": "passed",
+    "native_bundle_signature": "verified"
+  },
+  "delivery": {
+    "app_bundle_updated": true,
+    "current_playback_kept_running": true,
+    "player_code_changes_require_reopening": true,
+    "playlist_refresh_applied_immediately": true,
+    "app_executable_sha256": "44fd457745357575421a4904a51536210467b09017e3b4144e26498a781d1e13"
+  },
+  "limits": [
+    "Only selected channels were decoded; this is not a 157-channel playback certification.",
+    "The new DAZN HLS path was verified through the real Rust API and a media fragment in an isolated profile; new native decoding was not measured for that channel.",
+    "Nine original TS endpoints and their HLS alternatives returned HTTP 403 in this session; Caccia also returned 403.",
+    "Human audio audibility was not verified.",
+    "The in-progress native Sky Uno playback used the existing process after its source data was refreshed."
+  ]
+}

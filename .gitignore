@@ -21,6 +21,8 @@ widevinecdm.dll
 .env.*
 !.env.example
 !.env.*.example
+video-settings.json
+.video-settings.tmp
 .aws/
 .ssh/
 *.pem

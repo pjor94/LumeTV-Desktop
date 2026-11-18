@@ -1,11 +1,18 @@
+import { personalizedChannels } from '../domain';
+import { library, personalRadioSelection } from '../personal';
+import { useStore } from '../store';
+import { SourceSelector, LibraryCatalog } from './LibraryCatalog';
 import { app, refreshCatalog } from '../app';
 import { filterChannels, isRadio } from '../domain';
 import { EmptyState, Heading, Icon, RadioCard } from '../components/common';
 import '../radio.css';
 
 const PAGE_SIZE = 48;
-export function Radio() {
-    const state = app.get();
+export function BuiltinRadio() {
+    const state = {
+        ...app.get(),
+        channels: personalizedChannels(app.get().channels, app.get().preferences),
+    };
     const filter = state.radioFilter;
     const setFilter = (radioFilter: typeof filter) => app.set({ radioFilter, radioPage: 0 });
     const radio = state.catalog.radio;
@@ -112,6 +119,22 @@ export function Radio() {
                               : 'Prova un altro nome o una città.'
                     }
                 />
+            )}
+        </>
+    );
+}
+
+export function Radio() {
+    const state = useStore(library);
+    const selection = useStore(personalRadioSelection);
+    const personal = state.sources.some((s) => s.enabled && s.report.radio > 0);
+    return (
+        <>
+            {personal && <SourceSelector radio />}
+            {personal && selection.source !== 'builtin' ? (
+                <LibraryCatalog radio />
+            ) : (
+                <BuiltinRadio />
             )}
         </>
     );

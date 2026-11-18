@@ -1,6 +1,50 @@
 import { test, expect } from '@playwright/test';
-import { fixture, channels } from './fixture';
+import { readFileSync } from 'node:fs';
+import { fixture, channels, guide, now } from './fixture';
 import type { WidevineStatus } from '../src/types';
+
+test('guide retries at the server deadline and then displays programmes and logos', async ({
+    page,
+}) => {
+    await fixture(page);
+    let calls = 0;
+    await page.route('**/api/guide', async (route) => {
+        calls++;
+        await route.fulfill({
+            json:
+                calls === 1
+                    ? {
+                          ...guide,
+                          programmes: {},
+                          logos: {},
+                          error: 'Il servizio della guida richiede una pausa.',
+                          next_retry_at: now + 1500,
+                      }
+                    : {
+                          ...guide,
+                          logos: { rai1: 'https://epg-guide.com/icn/icons/rai1.png' },
+                          error: null,
+                      },
+        });
+    });
+    const png = Buffer.from(
+        readFileSync(
+            new URL('../../../tests/fixtures/guide-logo.png.base64', import.meta.url),
+            'utf8',
+        ).trim(),
+        'base64',
+    );
+    await page.route('**/art/channel/rai1*', (route) =>
+        route.fulfill({ contentType: 'image/png', body: png }),
+    );
+    await page.reload();
+    await expect.poll(() => calls, { timeout: 5000 }).toBeGreaterThanOrEqual(2);
+    await expect(page.locator('[data-play="rai1"] img').first()).toHaveAttribute('data-loaded', '');
+    await expect(page.locator('.channel-main[data-play="rai1"] .rai-word')).toBeHidden();
+    await expect(
+        page.locator('.channel-card').filter({ has: page.locator('[data-play="rai1"]') }),
+    ).toContainText(guide.programmes.rai1[0].title);
+});
 
 test('catalog, filters and search retain focus and render guide metadata as text', async ({
     page,

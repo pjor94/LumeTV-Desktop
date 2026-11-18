@@ -7,6 +7,8 @@ import '../app.css';
 import '../motion.css';
 import './widevine.css';
 import './startup.css';
+import './personal.css';
+import './video.css';
 
 motion.initialize(document);
 createRoot(document.getElementById('app')!).render(

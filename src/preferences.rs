@@ -27,6 +27,10 @@ pub struct Preferences {
     pub muted: bool,
     pub quality: String,
     pub zap_favorites_only: bool,
+    pub audio_language: String,
+    pub subtitle_mode: String,
+    pub subtitle_language: String,
+    pub channel_layout: Value,
 }
 
 impl Default for Preferences {
@@ -40,8 +44,19 @@ impl Default for Preferences {
             muted: false,
             quality: "auto".into(),
             zap_favorites_only: false,
+            audio_language: String::new(),
+            subtitle_mode: "system".into(),
+            subtitle_language: String::new(),
+            channel_layout: serde_json::json!({"version":1,"order":[],"hidden":[],"owners":{}}),
         }
     }
+}
+
+pub(crate) fn valid_language(value: &str) -> bool {
+    static LANGUAGE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+        regex::Regex::new(r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$").unwrap()
+    });
+    value.is_empty() || value.len() <= 35 && LANGUAGE.is_match(value)
 }
 
 pub struct PreferenceStore {
@@ -59,7 +74,7 @@ impl PreferenceStore {
         let path = directory.join("preferences.json");
         let mut value = if path.is_file() {
             let bytes = fs::read(&path).context("Impossibile leggere le preferenze")?;
-            if bytes.len() > 64 * 1024 {
+            if bytes.len() > 8 * 1024 * 1024 {
                 bail!("File preferenze troppo grande");
             }
             serde_json::from_slice(&bytes).context("Preferenze non valide")?
@@ -67,6 +82,7 @@ impl PreferenceStore {
             Preferences::default()
         };
         normalize(&mut value);
+        catalog.personal.set_layout(&value.channel_layout);
         Ok(Self {
             catalog,
             path,
@@ -78,12 +94,93 @@ impl PreferenceStore {
         self.value.lock().expect("preferences lock").clone()
     }
 
+    pub(crate) fn replace_backup(&self, mut value: Preferences) -> Result<Preferences> {
+        let mut guard = self
+            .value
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Preferenze occupate"))?;
+        normalize(&mut value);
+        let temp = self
+            .path
+            .with_extension(format!("{}.tmp", uuid::Uuid::new_v4()));
+        let bytes = serde_json::to_vec_pretty(&value)?;
+        if bytes.len() > 8 * 1024 * 1024 {
+            bail!("Le preferenze superano il limite di spazio.");
+        }
+        fs::write(&temp, bytes)?;
+        if let Err(error) = fs::rename(&temp, &self.path) {
+            let _ = fs::remove_file(&temp);
+            return Err(error.into());
+        }
+        self.catalog.personal.set_layout(&value.channel_layout);
+        *guard = value.clone();
+        Ok(value)
+    }
     pub fn update(&self, patch: &Value) -> Result<Preferences> {
         let mut guard = self
             .value
             .lock()
             .map_err(|_| anyhow::anyhow!("Preferenze occupate"))?;
         let mut next = guard.clone();
+        for key in ["audio_language", "subtitle_language"] {
+            if let Some(language) = patch[key].as_str() {
+                if !valid_language(language) {
+                    bail!("Lingua non valida.");
+                }
+                if key == "audio_language" {
+                    next.audio_language = language.into();
+                } else {
+                    next.subtitle_language = language.into();
+                }
+            }
+        }
+        if let Some(mode) = patch["subtitle_mode"].as_str() {
+            if !["system", "off", "language"].contains(&mode) {
+                bail!("Preferenza sottotitoli non valida.");
+            }
+            next.subtitle_mode = mode.into();
+        }
+        if let Some(id) = patch["hide_channel"].as_str() {
+            let channel = self
+                .catalog
+                .channel(id)
+                .ok_or_else(|| anyhow::anyhow!("Canale non disponibile."))?;
+            let source = if id.starts_with("personal_") {
+                self.catalog
+                    .personal
+                    .channel(id)
+                    .map(|c| c.source_id)
+                    .unwrap_or_default()
+            } else if channel.kind == crate::model::MediaKind::Radio {
+                "builtin_radio".into()
+            } else {
+                "builtin_tv".into()
+            };
+            let rows = next.channel_layout["hidden"]
+                .as_array_mut()
+                .ok_or_else(|| anyhow::anyhow!("Personalizzazioni non valide."))?;
+            if !rows.iter().any(|r| r["id"] == id) {
+                rows.push(serde_json::json!({"id":id,"source":source,"name":channel.name.chars().take(160).collect::<String>(),"kind":if channel.kind==crate::model::MediaKind::Radio{"RADIO"}else{"TV"}}));
+            }
+        }
+        if let Some(id) = patch["restore_hidden"].as_str() {
+            if let Some(rows) = next.channel_layout["hidden"].as_array_mut() {
+                rows.retain(|r| r["id"] != id);
+            }
+        }
+        if let Some(id) = patch["channel_first"].as_str() {
+            if self.catalog.channel(id).is_none() {
+                bail!("Canale non disponibile.");
+            }
+            let rows = next.channel_layout["order"]
+                .as_array_mut()
+                .ok_or_else(|| anyhow::anyhow!("Ordine dei canali non valido."))?;
+            rows.retain(|v| v != id);
+            rows.insert(0, serde_json::json!(id));
+        }
+        if patch["reset_channel_order"] == true {
+            next.channel_layout["order"] = serde_json::json!([]);
+        }
         if let Some(id) = patch["toggle_favorite"].as_str() {
             if self.catalog.channel(id).is_none() {
                 bail!("Canale sconosciuto");
@@ -153,17 +250,35 @@ impl PreferenceStore {
             .path
             .with_extension(format!("{}.tmp", uuid::Uuid::new_v4()));
         let bytes = serde_json::to_vec_pretty(&next)?;
+        if bytes.len() > 8 * 1024 * 1024 {
+            bail!("Le preferenze superano il limite di spazio.");
+        }
         fs::write(&temporary, bytes).context("Impossibile salvare le preferenze")?;
         if fs::rename(&temporary, &self.path).is_err() {
             let _ = fs::remove_file(&temporary);
             bail!("Impossibile aggiornare le preferenze");
         }
+        self.catalog.personal.set_layout(&next.channel_layout);
         *guard = next.clone();
         Ok(next)
     }
 }
 
 fn normalize(value: &mut Preferences) {
+    if value.channel_layout["order"].as_array().is_none()
+        || value.channel_layout["hidden"].as_array().is_none()
+    {
+        value.channel_layout = serde_json::json!({"version":1,"order":[],"hidden":[],"owners":{}});
+    }
+    for language in [&mut value.audio_language, &mut value.subtitle_language] {
+        if !valid_language(language) {
+            language.clear();
+        }
+    }
+    if !["system", "off", "language"].contains(&value.subtitle_mode.as_str()) {
+        value.subtitle_mode = "system".into();
+    }
+
     let mut seen = std::collections::HashSet::new();
     value
         .favorites
@@ -245,5 +360,26 @@ mod tests {
         assert!(store.update(&json!({"volume":2})).is_err());
         assert_eq!(store.get().volume, 0.4);
         fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod android_preferences_tests {
+    use super::*;
+    #[test]
+    fn language_tags_match_android_including_numeric_regions() {
+        for language in ["", "it", "eng", "es-419", "zh-Hant-TW"] {
+            assert!(valid_language(language));
+        }
+        for language in [
+            "i",
+            "italian",
+            "it_ITALY",
+            "it--IT",
+            "it-a",
+            "https://example",
+        ] {
+            assert!(!valid_language(language));
+        }
     }
 }
