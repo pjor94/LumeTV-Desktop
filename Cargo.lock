@@ -211,9 +211,9 @@ dependencies = [
 
 [[package]]
 name = "cef"
-version = "150.2.1+150.0.14"
+version = "156.5.0+156.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b912d9d13dd63b4bffa750f1f3c49271dc96d6c91ca2d1c1f68a0172832170c8"
+checksum = "d9a6183969865454243d78ef9d316efddb07f7627d0c89381bf48cf73f741b72"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -231,11 +231,12 @@ dependencies = [
 
 [[package]]
 name = "cef-dll-sys"
-version = "150.2.1+150.0.14"
+version = "156.6.0+156.0.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31b1059b49a0d5aa3872035f076210a31df6d70e039e12427b41ceba7c650b49"
+checksum = "d35a4bcb237ea9c8cb88f2e66f63394fd0321ece6f1a74be7c0354f115e1a096"
 dependencies = [
  "anyhow",
+ "cc",
  "cmake",
  "download-cef",
  "serde_json",
@@ -535,7 +536,9 @@ dependencies = [
 
 [[package]]
 name = "download-cef"
-version = "2.3.2"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "734444ee6a26f89cc9f883e9de0ced6b2afef7d4c561d7c949aeb13119f8f98d"
 dependencies = [
  "bzip2",
  "clap",
@@ -2597,3 +2600,7 @@ name = "zmij"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
+
+[[patch.unused]]
+name = "download-cef"
+version = "2.3.2"
