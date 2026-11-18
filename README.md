@@ -20,16 +20,16 @@
 <a id="download"></a>
 
 > [!TIP]
-> ### Scarica Lume TV 0.2.0
+> ### Scarica Lume TV 0.3.0
 >
 > | Sistema | Download |
 > | --- | --- |
-> | macOS 13+ · Apple Silicon | [Scarica DMG](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-arm64.dmg) · [ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-arm64.zip) |
-> | macOS 13+ · Intel | [Scarica DMG](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-x64.dmg) · [ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-macos-x64.zip) |
-> | Windows x64 | [Scarica ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-windows-x64.zip) |
-> | Linux x64 / Ubuntu 24.04 | [Scarica DEB](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-linux-x64.deb) · [tar.gz](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.2.0/LumeTV-0.2.0-linux-x64.tar.gz) |
+> | macOS 13+ · Apple Silicon | [Scarica DMG](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.3.0/LumeTV-0.3.0-macos-arm64.dmg) · [ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.3.0/LumeTV-0.3.0-macos-arm64.zip) |
+> | macOS 13+ · Intel | [Scarica DMG](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.3.0/LumeTV-0.3.0-macos-x64.dmg) · [ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.3.0/LumeTV-0.3.0-macos-x64.zip) |
+> | Windows x64 | [Scarica ZIP](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.3.0/LumeTV-0.3.0-windows-x64.zip) |
+> | Linux x64 / Ubuntu 24.04 | [Scarica DEB](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.3.0/LumeTV-0.3.0-linux-x64.deb) · [tar.gz](https://github.com/pjor94/LumeTV-Desktop/releases/download/v0.3.0/LumeTV-0.3.0-linux-x64.tar.gz) |
 >
-> [Apri la release: novità, sorgenti e checksum](https://github.com/pjor94/LumeTV-Desktop/releases/tag/v0.2.0) · [Tutte le release](https://github.com/pjor94/LumeTV-Desktop/releases) · [Istruzioni di installazione](#distribuzione-e-installazione)
+> [Ultima release stabile, sorgenti e checksum](https://github.com/pjor94/LumeTV-Desktop/releases/latest) · [Tutte le release](https://github.com/pjor94/LumeTV-Desktop/releases) · [Istruzioni di installazione](#distribuzione-e-installazione)
 
 > [!NOTE]
 > Lume TV Desktop è in sviluppo. Le prove di riproduzione disponibili riguardano
@@ -159,8 +159,8 @@ Apri **Impostazioni → Le mie liste → Gestisci liste** per importare una list
 da indirizzo o file. Controlla l’anteprima e premi **Importa lista**. I selettori
 in Canali, Radio e Guida TV permettono di aprire le sorgenti personali;
 **Video** raccoglie film e serie delle liste TV personali, con stagioni, episodi,
-Continua a guardare, salvati e aggiunti di recente. Le informazioni TMDB sono
-facoltative e si attivano dalle opzioni della sezione.
+Continua a guardare, salvati e aggiunti di recente. Per usare TMDB, inserisci il
+Read Access Token del tuo account in **Video → Informazioni online**.
 
 Puoi configurare lettura, gruppi, header, cookie, guida e archivio per sorgente.
 La guida mostra i comandi per rivedere un programma quando il servizio lo consente.
@@ -190,11 +190,12 @@ di [GitHub Actions](https://github.com/pjor94/LumeTV-Desktop/actions).
 | Windows x64 | Estrai tutta la cartella ZIP e avvia `LumeTV.exe` |
 | Linux x64 / Ubuntu 24.04 | Installa il DEB con il gestore pacchetti, oppure estrai il tar.gz e avvia `AppRun` |
 
-Se usi la **0.1.0**, chiudi Lume e installa manualmente la **0.2.0**. Preferiti e
-impostazioni rimangono nella cartella dati dell’utente. Dalla 0.2.0 puoi controllare
-e scaricare gli aggiornamenti nelle Impostazioni dell’app.
+Se usi la **0.1.0**, chiudi Lume e installa manualmente il pacchetto della
+versione corrente. Preferiti e impostazioni restano salvati. Dalla **0.2.0**
+puoi controllare e scaricare gli aggiornamenti in **Impostazioni →
+Aggiornamenti dell’app**.
 
-I tag ordinari, come `v0.2.0`, producono una release normale. I tag con suffisso
+I tag ordinari, come `v0.3.0`, producono una release stabile. I tag con suffisso
 `beta` o `rc` producono un’anteprima. Le istruzioni complete sono in
 [pacchetti e release](docs/RELEASE.md).
 
